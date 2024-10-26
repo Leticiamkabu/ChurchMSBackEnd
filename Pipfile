@@ -1,0 +1,29 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+uvicorn = "*"
+sqlalchemy = "*"
+python-dotenv = "*"
+psycopg2-binary = "*"
+asyncpg = "*"
+fastapi-login = "*"
+httpx = "*"
+requests = "*"
+python-jose = "*"
+python-multipart = "*"
+libmagic = "*"
+filetype = "*"
+pyjwt = "*"
+passlib = "*"
+python-decouple = "*"
+minio = "*"
+bcrypt = "*"
+fastapi-mail = "*"
+[dev-packages]
+
+[requires]
+python_version = "3.12"
