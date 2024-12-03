@@ -173,53 +173,53 @@ async def create_member_image(db: db_dependency, fullname : str = Form(...),  fi
     return {"message": "Member image creation successful", "member_image_id": new_member_image.id}
 
 
-import io
-import pandas as pd
-import magic  # To detect file type
-# from fastapi import APIRouter, UploadFile, HTTPException
-from typing import Any
+# import io
+# import pandas as pd
+# import magic  # To detect file type
+# # from fastapi import APIRouter, UploadFile, HTTPException
+# from typing import Any
 
 
-@router.post("/members/upload")
+# @router.post("/members/upload")
 
-def extract_file_data(file: UploadFile):
-    try:
-        # Read the file content
-        file_content = file.file.read()
+# def extract_file_data(file: UploadFile):
+#     try:
+#         # Read the file content
+#         file_content = file.file.read()
 
-        # Detect the file type based on extension
-        file_extension = file.filename.split('.')[-1].lower()
+#         # Detect the file type based on extension
+#         file_extension = file.filename.split('.')[-1].lower()
 
-        if file_extension in ['xls', 'xlsx']:
-            # Handle Excel files
-            data = pd.read_excel(io.BytesIO(file_content))
-            extracted_data = data.to_dict(orient="records")  # Convert to list of dicts
+#         if file_extension in ['xls', 'xlsx']:
+#             # Handle Excel files
+#             data = pd.read_excel(io.BytesIO(file_content))
+#             extracted_data = data.to_dict(orient="records")  # Convert to list of dicts
 
-        elif file_extension == 'csv':
-            # Handle CSV files
-            data = pd.read_csv(io.BytesIO(file_content))
-            extracted_data = data.to_dict(orient="records")
+#         elif file_extension == 'csv':
+#             # Handle CSV files
+#             data = pd.read_csv(io.BytesIO(file_content))
+#             extracted_data = data.to_dict(orient="records")
 
-        elif file_extension == 'json':
-            # Handle JSON files
-            extracted_data = json.loads(file_content.decode("utf-8"))
+#         elif file_extension == 'json':
+#             # Handle JSON files
+#             extracted_data = json.loads(file_content.decode("utf-8"))
 
-        elif file_extension == 'txt':
-            # Handle plain text files (assume space or tab delimited)
-            try:
-                data = pd.read_csv(io.BytesIO(file_content), delimiter=r'\s+')
-                extracted_data = data.to_dict(orient="records")
-            except Exception:
-                # If parsing as a table fails, return raw text lines
-                extracted_data = file_content.decode("utf-8").splitlines()
+#         elif file_extension == 'txt':
+#             # Handle plain text files (assume space or tab delimited)
+#             try:
+#                 data = pd.read_csv(io.BytesIO(file_content), delimiter=r'\s+')
+#                 extracted_data = data.to_dict(orient="records")
+#             except Exception:
+#                 # If parsing as a table fails, return raw text lines
+#                 extracted_data = file_content.decode("utf-8").splitlines()
 
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload CSV, JSON, TXT, or Excel files.")
+#         else:
+#             raise HTTPException(status_code=400, detail="Unsupported file type. Please upload CSV, JSON, TXT, or Excel files.")
 
-        return extracted_data
+#         return extracted_data
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 
