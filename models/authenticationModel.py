@@ -16,8 +16,9 @@ class User(Base):
     password= Column(String, nullable=False)
     email = Column(String, nullable=True, unique=True)
     phoneNumber = Column(String, nullable=False)
-    lastLogedin= Column(String, nullable=True)
+    lastLogedin= Column(String, nullable=True, default="NOT_SET")
     role = Column(String, nullable=True,default="UNIDENTIFIED")
+    privileges = Column(String, nullable=True,default="UNIDENTIFIED")
     created_on = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
 

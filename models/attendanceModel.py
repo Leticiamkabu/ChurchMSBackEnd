@@ -12,6 +12,10 @@ class Attendance(Base):
     fullname = Column(String, nullable=False)
     date = Column(String, nullable=False,)
     status= Column(String, nullable=False)
+    serviceType = Column(String, nullable=False)
+    created_on = Column(DateTime, nullable=True,
+                        default=func.current_timestamp())
+    
 
 
 

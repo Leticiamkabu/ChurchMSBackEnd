@@ -23,6 +23,11 @@ python-decouple = "*"
 minio = "*"
 bcrypt = "*"
 fastapi-mail = "*"
+openpyxl = "*"
+xlrd = "*"
+pandas = "*"
+python-magic = "*"
+
 [dev-packages]
 
 [requires]

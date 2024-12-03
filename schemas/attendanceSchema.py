@@ -9,6 +9,7 @@ class AttendanceSchema(BaseModel):
     lastname: str
     othername: str
     status: str
+    serviceType: str
     
 
 

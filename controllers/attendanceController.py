@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import uuid
 import os
 
-from datetime import datetime
+from datetime import date
 from sqlalchemy import select, or_, func
 import requests
 from passlib.context import CryptContext
@@ -69,21 +69,32 @@ router = APIRouter()
 Status = ["PRESENT", "ABSENT" ]
 
 # create member
-@router.post("/attendance/create_attendance")  # done connecting
+@router.post("/attendance/create_attendance")  # done connected
 async def create_user(db: db_dependency, attendance: AttendanceSchema):
 
     logger.info("Endpoint : create_attendance")
+    result = await db.execute(
+        select(Attendance).where(Attendance.memberID == attendance.memberID, Attendance.date == str(date.today()))
+    )
+    attendance_data = result.scalar() 
+
+
+    if attendance_data:
+            print(attendance.status)
+            return "Attendance marked for this member"
 
     if attendance.status not in Status:
         print(attendance.status)
         return "Status provided does not exist"
 
+     
 
     attendance_data = Attendance(
                 memberID= attendance.memberID,
                 fullname = attendance.firstname + " " + attendance.othername + " " + attendance.lastname ,
-                date = str(datetime.now().date()),
+                date = str(date.today()),
                 status= attendance.status,
+                serviceType = attendance.serviceType
                 
 
             )
@@ -135,7 +146,7 @@ async def get_attendance_by_id( attendance_id: uuid.UUID ,db: db_dependency):
 @router.get("/attendance/get_attendance_by_member_id/{member_id}")
 async def get_attendance_by_member_id(member_id: str, db: db_dependency):
     result = await db.execute(
-        select(Attendance).where(Attendance.memberID == member_id)
+        select(Attendance).where(Attendance.memberID == member_id, Attendance.date == str(date.today()))
     )
     attendance_data = result.scalar()  # Retrieve all matching rows
 
@@ -170,32 +181,86 @@ async def get_attendance_data_by_status_and_date(status: str, date: str, db: db_
 
 
 # get total number of attendant on a particuler date
-@router.get("/attencance/get_total_number_of_attendance_for_a_particular_day")
-async def get_total_number_of_attendance_for_a_particular_day(status: str, date: str, db: db_dependency):
+@router.get("/attendance/get_attendance_for_the_current_day") # done connected
+async def get_attendance_for_the_current_day( db: db_dependency):
 
-    if status not in Status:
-        print(status)
-        return "Status provided does not exist"
-    # Query to count total members with the given status and date
+    
     result = await db.execute(
-        select(func.count()).select_from(Attendance).where(Attendance.date == date, Attendance.status == status)
+        select(func.count()).select_from(Attendance).where(Attendance.date == str(date.today()))
     )
-    total_members = result.scalar()  # Get the count result
+    total_attendance = result.scalar() 
+    
+    result = await db.execute(
+        select(func.count()).select_from(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "PRESENT")
+    )
+    present_attendance = result.scalar()
+    
+    result = await db.execute(
+        select(func.count()).select_from(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "ABSENT")
+    )
+    absent_attendance = result.scalar() # Get the count result
 
     # if total_members == 0
     #     return "No data found"
 
-    return {"total_members": total_members}
+    return {"total_attendance": total_attendance, "present_attendance": present_attendance,"absent_attendance": absent_attendance}
 
 
 
 
 
 
+# get attendance data by current date
+@router.get("/attendance/get_attendance_data")
+async def get_attendance_data( db: db_dependency):
 
 
+    # Query to fetch attendance data based on status and date
+    result = await db.execute(
+        select(Attendance).where(Attendance.date == str(date.today()))
+    )
+    
+    attendance_data = result.scalars().all()  # Fetch all matching records
+
+    if attendance_data == []:
+        return "No data found"
+
+    return attendance_data
 
 
+# get present attendance data by current date
+@router.get("/attendance/get_present_attendance_data")
+async def get_present_attendance_data( db: db_dependency):
+
+
+    # Query to fetch attendance data based on status and date
+    result = await db.execute(
+        select(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "PRESENT")
+    )
+    
+    attendance_data = result.scalars().all()  # Fetch all matching records
+
+    if attendance_data == []:
+        return "No data found"
+
+    return attendance_data
+
+
+@router.get("/attendance/get_absent_attendance_data")
+async def get_absent_attendance_data( db: db_dependency):
+
+
+    # Query to fetch attendance data based on status and date
+    result = await db.execute(
+        select(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "ABSENT")
+    )
+    
+    attendance_data = result.scalars().all()  # Fetch all matching records
+
+    if attendance_data == []:
+        return "No data found"
+
+    return attendance_data
 
 
 # update attendance by id

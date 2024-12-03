@@ -10,6 +10,7 @@ import requests
 from passlib.context import CryptContext
 import bcrypt
 import random
+import base64
 
 
 
@@ -69,34 +70,156 @@ router = APIRouter()
 
 # create member
 @router.post("/members/create_member")  # done connecting
-async def create_user(db: db_dependency, member: MemberSchema):
+async def create_member(db: db_dependency, member: MemberSchema):
 
     logger.info("Endpoint : create_memeber")
 
+     # Check if at least one field in the member schema has data
+    if not any(value for value in member.dict().values() if value not in [None, '']):
+        raise HTTPException(
+            status_code=200,
+            detail="No data provided. Member data rejected."
+        )
+
     member_data = Member(
+                title=member.title,
                 firstname=member.firstname,
+                middlename=member.middlename,
                 lastname =member.lastname,
-                othername =member.othername,
+                dateOfBirth = member.dateOfBirth,
+                gender = member.gender,
                 phoneNumber=member.phoneNumber,
                 email = member.email,
-                age = member.age,
-                dateOfBirth = member.dateOfBirth,
-                houseAddress = member.houseAddress,
+                nationality = member.nationality,
+                homeTown = member.homeTown,
+                homeAddress = member.homeAddress,
+                workingStatus = member.workingStatus,
+                occupation = member.occupation,
+                qualification = member.qualification,
+                institutionName = member.institutionName,
+                mothersName = member.mothersName,
+                fathersName = member.fathersName,
+                nextOfKin = member.nextOfKin,
+                nextOfKinPhoneNumber = member.nextOfKinPhoneNumber,
+                maritalStatus = member.maritalStatus,
+                spouseContact = member.spouseContact,
+                spouseName = member.spouseName,
+                numberOfChildren = member.numberOfChildren,
+                memberType = member.memberType,
+                cell = member.cell,
+                departmentName = member.departmentName,
+                dateJoined = member.dateJoined,
+                classSelection = member.classSelection,
+                position = member.position,
+                waterBaptised = member.waterBaptised,
+                baptisedBy = member.baptisedBy,
+                dateBaptised = member.dateBaptised,
+                baptisedByTheHolySpirit = member.baptisedByTheHolySpirit,
+                memberStatus = member.memberStatus,
+                dateDeceased = member.dateDeceased,
+                dateBuried = member.dateBuried,
+                confirmed = member.confirmed,
+                dateConfirmed = member.dateConfirmed,
+                comment = member.comment,
 
             )
-    
 
+
+      # Save member to the database
     db.add(member_data)
     await db.commit()
 
+    logger.info("Member registration successful.")
+    return {"message": "Member registration successful", "Member": member_data}
     
 
-    logger.info("Member created and saved in the database")
+    
+
+    
 
 
-    logger.info("Member Registeration Sucessful")
-    return {"message": "Member registeration successfully", "Member": member_data}
 
+
+# create member
+@router.post("/members/create_member_image")  # done connecting
+async def create_member_image(db: db_dependency, fullname : str = Form(...),  file: UploadFile = File(...)):
+
+    logger.info("Endpoint : create_member_image")
+
+    # Validate file type (e.g., images only)
+    allowed_file_types = ["image/jpeg", "image/png", "image/gif"]
+    if file.content_type not in allowed_file_types:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Allowed types: jpeg, png, gif.")
+    
+    #  Read the file content as binary data
+    member_image_data = await file.read()
+    
+    # Convert to Base64
+    image_base64 = base64.b64encode(member_image_data).decode('utf-8')
+    
+    # Create an image instance and associate it with the new item
+    new_member_image = MemberImage(
+        fullname = fullname,  # Use new_item_data.id here
+        image = image_base64,
+        imageFileName=file.filename
+    )
+    
+    # Add the new image to the database
+    db.add(new_member_image)
+    await db.commit()
+    
+    logger.info("Member image created and saved in the database with ID: %s", new_member_image.id)
+
+    return {"message": "Member image creation successful", "member_image_id": new_member_image.id}
+
+
+import io
+import pandas as pd
+import magic  # To detect file type
+# from fastapi import APIRouter, UploadFile, HTTPException
+from typing import Any
+
+
+@router.post("/members/upload")
+
+def extract_file_data(file: UploadFile):
+    try:
+        # Read the file content
+        file_content = file.file.read()
+
+        # Detect the file type based on extension
+        file_extension = file.filename.split('.')[-1].lower()
+
+        if file_extension in ['xls', 'xlsx']:
+            # Handle Excel files
+            data = pd.read_excel(io.BytesIO(file_content))
+            extracted_data = data.to_dict(orient="records")  # Convert to list of dicts
+
+        elif file_extension == 'csv':
+            # Handle CSV files
+            data = pd.read_csv(io.BytesIO(file_content))
+            extracted_data = data.to_dict(orient="records")
+
+        elif file_extension == 'json':
+            # Handle JSON files
+            extracted_data = json.loads(file_content.decode("utf-8"))
+
+        elif file_extension == 'txt':
+            # Handle plain text files (assume space or tab delimited)
+            try:
+                data = pd.read_csv(io.BytesIO(file_content), delimiter=r'\s+')
+                extracted_data = data.to_dict(orient="records")
+            except Exception:
+                # If parsing as a table fails, return raw text lines
+                extracted_data = file_content.decode("utf-8").splitlines()
+
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload CSV, JSON, TXT, or Excel files.")
+
+        return extracted_data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 
 
@@ -143,7 +266,7 @@ async def get_member_by_words( words: str ,db: db_dependency):
         or_(
             Member.firstname.ilike(f"%{words}%"),  # Case-insensitive match
             Member.lastname.ilike(f"%{words}%"),
-            Member.othername.ilike(f"%{words}%")
+            Member.middlename.ilike(f"%{words}%")
         )
     )
 
