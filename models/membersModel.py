@@ -53,6 +53,8 @@ class Member(Base):
                         default=func.current_timestamp())
 
 
+
+
 class MemberImage(Base):
     __tablename__ = 'member_image'
 
@@ -67,3 +69,7 @@ class MemberImage(Base):
     # use it in the profile model
     # user = relationship("User", back_populates="profile")
 
+
+
+
+    

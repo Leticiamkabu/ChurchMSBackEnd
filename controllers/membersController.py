@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException 
 from typing import Annotated
 from sqlalchemy.orm import Session
 import uuid
-import os
-
+from fastapi.responses import FileResponse 
 from datetime import datetime
 from sqlalchemy import select, or_, func
 import requests
@@ -34,7 +33,7 @@ import logging
 # from smtplib import SMTPException
 import os
 import string
-
+from helperFunctions.exportFile import *
 
 # file upload
 from fastapi import UploadFile,status, File, Form
@@ -110,6 +109,7 @@ async def create_member(db: db_dependency, member: MemberSchema):
                 departmentName = member.departmentName,
                 dateJoined = member.dateJoined,
                 classSelection = member.classSelection,
+                spiritualGift = member.spiritualGift,
                 position = member.position,
                 waterBaptised = member.waterBaptised,
                 baptisedBy = member.baptisedBy,
@@ -229,14 +229,44 @@ async def create_member_image(db: db_dependency, fullname : str = Form(...),  fi
 @router.get("/members/get_all_members")
 async def get_all_members( db: db_dependency):
 
-    member = await db.execute(select(Member))
+    member = await db.execute(select(Member).order_by(Member.id))
     member_data = member.scalars().all()
+
     
     if member_data  is None:
         raise HTTPException(status_code=200, detail="No user data exists", data = member_data)
     
-    return member_data 
+    return [MemberResponse.from_orm(member) for member in member_data]  
     
+
+@router.get("/members/get_all_members_file")
+async def get_all_members(db: db_dependency):
+
+    member = await db.execute(select(Member).order_by(Member.id))
+    member_data = member.scalars().all()
+    ordered_member_data = [MemberResponse.from_orm(member) for member in member_data]  
+
+    member_dicts = []
+    for member in ordered_member_data:
+        member_dict = {}
+        for key, value in member.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    member_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    member_dict[key] = value
+        member_dicts.append(member_dict)
+        print ("the data before the sheet ",member_dicts)
+    # Check if member_data is empty
+    if not member_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+    # Generate Excel file
+    file_path = generate_excel(member_dicts, "member_data")
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="member_data.xlsx")
 
 
 # get member by id
@@ -366,3 +396,39 @@ async def delete_member_by_id(member_id: uuid.UUID, db: db_dependency):
 
 
     return "Member deleted successfully"
+
+
+# download members
+@router.get("/members/download_member_data")
+async def download_member_data(db: db_dependency):
+
+    member = await db.execute(select(Member).order_by(Member.id))
+    member_data = member.scalars().all()
+    ordered_member_data = [MemberResponse.from_orm(member) for member in member_data]  
+
+    member_dicts = []
+    for member in ordered_member_data:
+        member_dict = {}
+        for key, value in member.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    member_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    member_dict[key] = value
+        member_dicts.append(member_dict)
+        print ("the data before the sheet ",member_dicts)
+    # Check if member_data is empty
+    if not member_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+    # Generate Excel file
+    file_path = generate_excel(member_dicts, "member_data")
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="member_data.xlsx")
+
+
+# download members added on a particular day
+
+

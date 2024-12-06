@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 import uuid
 import os
-
+from fastapi.responses import FileResponse 
 from datetime import date
 from sqlalchemy import select, or_, func
 import requests
@@ -12,7 +12,7 @@ import bcrypt
 import random
 
 
-
+from helperFunctions.exportFile import *
 from models.attendanceModel import *
 # from models.profileModel import *
 # from models.itemsModel import *
@@ -329,3 +329,71 @@ async def delete_attendance_by_id(attendnance_id: uuid.UUID, db: db_dependency):
 
 
     return "Attendance deleted successfully"
+
+
+
+# download attendance
+@router.get("/attendance/download_attendance_data")
+async def download_attendance_data(db: db_dependency):
+
+    attendance = await db.execute(select(Attendance).order_by(Attendance.id))
+    attendance_data = attendance.scalars().all()
+    ordered_attendance_data = [AttendanceResponse.from_orm(attendance) for attendance in attendance_data]  
+
+    attendance_dicts = []
+    for attendance in ordered_attendance_data:
+        attendance_dict = {}
+        for key, value in attendance.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    attendance_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    attendance_dict[key] = value
+        attendance_dicts.append(attendance_dict)
+        print ("the data before the sheet ",attendance_dicts)
+    # Check if member_data is empty
+    if not attendance_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+    # Generate Excel file
+    file_path = generate_excel(attendance_dicts, "attendance_data")
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="attendance_data.xlsx")
+
+
+
+
+# download attendance for a particular day
+@router.get("/attendance/download_current_attendance_data")
+async def download_current_attendance_data(db: db_dependency):
+
+    attendance = await db.execute(select(Attendance).where(Attendance.date == str(date.today())))
+    attendance_data = attendance.scalars().all()
+    ordered_attendance_data = [AttendanceResponse.from_orm(attendance) for attendance in attendance_data]  
+
+    attendance_dicts = []
+    for attendance in ordered_attendance_data:
+        attendance_dict = {}
+        for key, value in attendance.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    attendance_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    attendance_dict[key] = value
+        attendance_dicts.append(attendance_dict)
+        print ("the data before the sheet ",attendance_dicts)
+    # Check if member_data is empty
+    if not attendance_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+    # Generate Excel file
+    file_path = generate_excel(attendance_dicts, "attendance_data")
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="attendance_data.xlsx")
+
+
+
