@@ -1,9 +1,10 @@
 
 from fastapi import Form, Depends
 from pydantic import BaseModel
-
+import uuid
 
 class MemberSchema(BaseModel):
+    id : uuid.UUID
     title : str
     firstname : str
     middlename : str
@@ -45,6 +46,12 @@ class MemberSchema(BaseModel):
     dateConfirmed :str
     comment :str
     
-
-
+   
     
+
+    class Config:
+        from_attributes = True  # This allows Pydantic to work with SQLAlchemy models
+
+
+class MemberResponse(MemberSchema):
+    pass  # You can add any extra fields or modifications if needed
