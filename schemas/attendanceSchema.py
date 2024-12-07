@@ -7,9 +7,7 @@ import uuid
 class AttendanceSchema(BaseModel):
     id : uuid.UUID
     memberID: str
-    firstname: str
-    lastname: str
-    othername: str
+    name: str
     status: str
     serviceType: str
 
