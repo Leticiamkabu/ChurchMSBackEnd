@@ -5,9 +5,7 @@ from pydantic import BaseModel
 
 class AttendanceSchema(BaseModel):
     memberID: str
-    firstname: str
-    lastname: str
-    othername: str
+    name: str
     status: str
     serviceType: str
     

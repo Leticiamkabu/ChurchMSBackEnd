@@ -91,7 +91,7 @@ async def create_user(db: db_dependency, attendance: AttendanceSchema):
 
     attendance_data = Attendance(
                 memberID= attendance.memberID,
-                fullname = attendance.firstname + " " + attendance.othername + " " + attendance.lastname ,
+                fullname = attendance.name ,
                 date = str(date.today()),
                 status= attendance.status,
                 serviceType = attendance.serviceType
