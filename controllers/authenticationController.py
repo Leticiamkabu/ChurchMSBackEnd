@@ -5,7 +5,7 @@ import uuid
 import os
 
 from datetime import datetime
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, create_engine, MetaData, Table
 import requests
 from passlib.context import CryptContext
 import bcrypt
@@ -41,7 +41,9 @@ from fastapi import UploadFile,status, File, Form
 
 import re
 from sqlalchemy.sql import func
+from sqlalchemy.exc import SQLAlchemyError
 
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 
 # # loging config
@@ -458,3 +460,72 @@ async def delete_user_by_id(user_id: uuid.UUID, db: db_dependency):
 
 
     return "User deleted successfully"
+
+
+
+
+import collections
+
+from sqlalchemy import create_engine, MetaData, Table, select, insert , inspect
+from sqlalchemy.engine.result import Row
+@router.post("/move_table")
+async def data_transfere(table_name: str):   
+    
+        
+
+    # Replace these with your actual database connection URLs
+    # SOURCE_DB_URL = 'postgresql://my_say_user:tbcPzQkvP3WCD44NnRG6vrQz9kCMbZqD@dpg-cls55tjip8as73a3duug-a.oregon-postgres.render.com/my_say'
+    # DESTINATION_DB_URL = 'postgresql://dbmaster:U49531PObSfZ@10.0.30.15:5432/mysay'
+
+    SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/ctcCMSLocal"
+    DESTINATION_DB_URL = "postgresql://ctc_rv4h_user:fqnsiIDlTy2GiNVqHrO87AHI3PvczSuv@dpg-cti1303tq21c739vinmg-a.oregon-postgres.render.com/ctc_rv4h"
+
+    # Replace 'your_table_name' with the actual table name you want to transfer
+    TABLE_NAME = table_name
+
+    # Set up the engines and metadata
+    source_engine = create_engine(SOURCE_DB_URL)
+    destination_engine = create_engine(DESTINATION_DB_URL)
+    metadata = MetaData()
+
+    # Reflect the table from the source database
+    source_table = Table(TABLE_NAME, metadata, autoload_with=source_engine)
+
+    # Connect to both databases
+    with source_engine.connect() as source_conn, destination_engine.connect() as dest_conn:
+        # Start a transaction in the destination database
+        with dest_conn.begin():
+             # Check if the destination table exists using the inspector
+            inspector = inspect(destination_engine)
+            if TABLE_NAME in inspector.get_table_names():
+                print(f"Table '{TABLE_NAME}' exists in the destination database.")
+                destination_table = Table(TABLE_NAME, metadata, autoload_with=destination_engine)
+            else:
+                print(f"Table '{TABLE_NAME}' does not exist. Creating table...")
+                # Define the schema based on the source table
+                destination_table = Table(
+                    TABLE_NAME,
+                    metadata,
+                    *(Column(col.name, col.type, primary_key=col.primary_key) for col in source_table.columns),
+                    extend_existing=True
+
+                )
+                metadata.create_all(destination_engine)
+
+            # Load data from the source table
+            print("Fetching data from source table...")
+            select_st = select(source_table)
+            results = source_conn.execute(select_st).fetchall()
+
+            # Insert data into the destination table
+            print(f"Transferring {len(results)} rows to destination table...")
+            for row in results:
+                # Convert Row object to dictionary
+                row_dict = dict(row._asdict())
+
+                # Insert data into the destination table
+                insert_st = insert(destination_table).values(**row_dict)
+                dest_conn.execute(insert_st)
+
+    print("Data transfer complete.")
+    return "Data transfer complete."
