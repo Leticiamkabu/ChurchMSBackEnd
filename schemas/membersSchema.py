@@ -10,6 +10,7 @@ class MemberSchema(BaseModel):
     middlename : str
     lastname : str
     dateOfBirth : str
+    age : str
     gender : str
     phoneNumber : str
     email : str

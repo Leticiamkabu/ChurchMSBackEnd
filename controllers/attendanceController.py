@@ -5,7 +5,7 @@ import uuid
 import os
 from fastapi.responses import FileResponse 
 from datetime import date
-from sqlalchemy import select, or_, func
+from sqlalchemy import select, or_, func, and_
 import requests
 from passlib.context import CryptContext
 import bcrypt
@@ -396,4 +396,203 @@ async def download_current_attendance_data(db: db_dependency):
     return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="attendance_data.xlsx")
 
 
+# download attendance for a particular day
+@router.get("/attendance/report_download/{specifiedDate}/{status}")
+async def download_attendance_report(db: db_dependency, specifiedDate: str, status: str):
 
+    attendance = await db.execute(select(Attendance))
+    attendance_data = attendance.scalars().all()
+
+    if specifiedDate == "":
+        specifiedDate = date.today()  
+
+    # Convert specifiedDate ordered_member_datato a date object
+    try:
+        year, month, day = map(int, specifiedDate.split("-"))
+        specified_date_obj = date(year, month, day)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Please use 'YYYY-MM-DD'.")
+        print("Invalid date format. Please use 'YYYY-MM-DD'.")
+        
+    
+    if specified_date_obj > date.today() or str(specified_date_obj) not in [record.date for record in attendance_data]:
+        raise HTTPException(status_code=200, detail="No attendance data exists with date specified")
+    
+    print(status)
+    if status == "All":
+        pass
+
+    elif status not in [record.status for record in attendance_data]:
+        raise HTTPException(status_code=200, detail="No attendance data exists with status specified")
+    
+
+    # Collect optional filters
+    filters = []
+
+    # Add filters based on optional inputs
+    if specified_date_obj:  # If a date is provided
+        filters.append(Attendance.date == str(specified_date_obj))
+    if status and status != "All":  # If a specific status is provided
+        filters.append(Attendance.status == status)
+
+
+    attendance = await db.execute(select(Attendance).where(and_(*filters)))
+    attendance_data = attendance.scalars().all()
+    ordered_attendance_data = [AttendanceResponse.from_orm(attendance) for attendance in attendance_data]  
+
+    attendance_dicts = []
+    for attendance in ordered_attendance_data:
+        attendance_dict = {}
+        for key, value in attendance.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    attendance_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    attendance_dict[key] = value
+        attendance_dicts.append(attendance_dict)
+        print ("the data before the sheet ",attendance_dicts)
+    # Check if member_data is empty
+    if not attendance_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+    # Generate Excel file
+    file_path = generate_excel(attendance_dicts, "attendance_data")
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="attendance_Report.xlsx")
+
+
+
+
+# download attendance for a particular day
+@router.get("/attendance/report_fetch/{specifiedDate}/{status}")
+async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status: str):
+
+    attendance = await db.execute(select(Attendance))
+    attendance_data = attendance.scalars().all()
+
+    if specifiedDate == "":
+        specifiedDate = date.today()
+
+    # Convert specifiedDate to a date object
+    try:
+        year, month, day = map(int, specifiedDate.split("-"))
+        specified_date_obj = date(year, month, day)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Please use 'YYYY-MM-DD'.")
+        print("Invalid date format. Please use 'YYYY-MM-DD'.")
+        
+    
+    if specified_date_obj > date.today() or str(specified_date_obj) not in [record.date for record in attendance_data]:
+        raise HTTPException(status_code=200, detail="No attendance data exists with date specified")
+    
+    print(status)
+    if status == "All":
+        pass
+
+    elif status not in [record.status for record in attendance_data]:
+        raise HTTPException(status_code=200, detail="No attendance data exists with status specified")
+    
+
+    # Collect optional filters
+    filters = []
+
+    # Add filters based on optional inputs
+    if specified_date_obj:  # If a date is provided
+        filters.append(Attendance.date == str(specified_date_obj))
+    
+
+    if status and status != "All":  # If a specific status is provided
+        filters.append(Attendance.status == status)
+
+
+    attendance = await db.execute(select(Attendance).where(and_(*filters)))
+    attendance_data = attendance.scalars().all()
+    ordered_attendance_data = [AttendanceResponse.from_orm(attendance) for attendance in attendance_data]  
+
+    attendance_dicts = []
+    for attendance in ordered_attendance_data:
+        attendance_dict = {}
+        for key, value in attendance.__dict__.items():
+            if not key.startswith('_'):
+                # If the value is a UUID, set the key as 'id' and convert the value to a string
+                if isinstance(value, uuid.UUID):
+                    attendance_dict['id'] = str(value)  # Change the key to 'id' and convert the UUID to a string
+                else:
+                    attendance_dict[key] = value
+        attendance_dicts.append(attendance_dict)
+        print ("the data before the sheet ",attendance_dicts)
+    # Check if member_data is empty
+    if not attendance_data:
+        raise HTTPException(status_code=200, detail="No user data exists")
+
+   
+    return attendance_dicts
+
+
+
+
+
+# script
+import pandas as pd
+@router.post("/csv")
+async def process_csv(file: UploadFile):
+    """
+    Processes a CSV file, updating column 'i' based on the country code in column 'h'.
+
+    Args:
+        file (UploadFile): Uploaded CSV file.
+    Returns:
+        FileResponse: Processed CSV file for download.
+    """
+
+    country_code_map = {
+                'Ghana': '233',
+                'Nigeria': '234',
+                'United States': '1',
+                'United Kindom': '44',
+    
+    
+    }
+    try:
+        # Save the uploaded file temporarily
+        temp_input_file = f"temp_{file.filename}"
+        with open(temp_input_file, "wb") as f:
+            f.write(await file.read())
+        
+        # Read the CSV file
+        df = pd.read_csv(temp_input_file)
+
+        # Ensure required columns exist
+        required_columns = ['phone', 'country', 'country_code']  # Assuming 'h' contains the country codes
+        for col in required_columns:
+            if col not in df.columns:
+                raise HTTPException(status_code=400, detail=f"Missing required column '{col}' in the CSV file. {df.columns}")
+
+        # Update column `i` with the country code from column `h`
+        def update_column_i(value, country_code, country):
+            country_code = country_code_map.get(country, "")
+            
+            return f"{country_code}{value}".strip() if pd.notna(value) and country_code else value
+
+        df['phone'] = df.apply(lambda row: update_column_i(row['phone'], row['country_code'],row['country']), axis=1)
+
+        # Save the processed DataFrame to a new CSV file
+        temp_output_file = f"processed_{file.filename}"
+        df.to_csv(temp_output_file, index=False)
+
+        # Return the processed file for download
+        return FileResponse(
+            temp_output_file,
+            media_type="text/csv",
+            filename=f"processed_{file.filename}"
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing the file: {e}")
+    
+    finally:
+        # Cleanup temporary files
+        if os.path.exists(temp_input_file):
+            os.remove(temp_input_file)
