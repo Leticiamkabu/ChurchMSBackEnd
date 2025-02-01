@@ -535,7 +535,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
 
 
 # script
-import pandas as pd
+# import pandas as pd
 @router.post("/csv")
 async def process_csv(file: UploadFile):
     """
