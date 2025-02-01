@@ -2,6 +2,7 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from dotenv import load_dotenv
+import ssl
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,9 +13,13 @@ db_pass = os.getenv('DB_PASS')
 db_host = os.getenv('DB_HOST')
 db_name = os.getenv('DB_NAME')
 
+
+
 # Ensure that all the necessary environment variables are loaded
 if not all([db_user, db_pass, db_host, db_name]):
     raise EnvironmentError("Missing one or more required environment variables for database connection")
+
+
 
 # Construct the async database URL
 SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{db_user}:{db_pass}@{db_host}/{db_name}"

@@ -3,8 +3,8 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 import uuid
 from fastapi.responses import FileResponse 
-from datetime import datetime
-from sqlalchemy import select, or_, func
+from datetime import datetime, date
+from sqlalchemy import select, or_, func, and_
 import requests
 from passlib.context import CryptContext
 import bcrypt
@@ -40,7 +40,7 @@ from fastapi import UploadFile,status, File, Form
 # from utils.minio_util import upload_file
 
 import re
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func , extract
 
 
 
@@ -79,6 +79,8 @@ async def create_member(db: db_dependency, member: MemberSchema):
             status_code=200,
             detail="No data provided. Member data rejected."
         )
+    
+    age = int(date.today().strftime("%Y")) - int(member.age[0:4])
 
     member_data = Member(
                 title=member.title,
@@ -86,6 +88,7 @@ async def create_member(db: db_dependency, member: MemberSchema):
                 middlename=member.middlename,
                 lastname =member.lastname,
                 dateOfBirth = member.dateOfBirth,
+                age = age,
                 gender = member.gender,
                 phoneNumber=member.phoneNumber,
                 email = member.email,
@@ -282,7 +285,17 @@ async def get_member_by_id( member_id: uuid.UUID ,db: db_dependency):
     return member_data
 
 
+# get member by id
+@router.get("/members/sort_member_data/{age}/{department}/{bithMonth}")
+async def get_member_by_id( member_id: uuid.UUID ,db: db_dependency):
 
+    member_data = await db.get(Member, member_id)
+    
+    
+    if member_data  is None:
+        raise HTTPException(status_code=200, detail="user with id does not exist", data = member_data)
+    
+    return member_data
 
 
 
@@ -429,6 +442,29 @@ async def download_member_data(db: db_dependency):
     return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="member_data.xlsx")
 
 
-# download members added on a particular day
+# sort member data
+@router.get("/members/sort_member_data/{age}/{ageRange}/{department}/{birthMonth}")
+async def sort_member_data(db: db_dependency, age: str, ageRange: str, department:str, birthMonth:str):
 
+    # Collect optional filters
+    filters = []
+
+    # Add filters based on optional inputs
+    if age != "a":  # If a date is provided
+        filters.append(Member.age == age)
+    if department != "d":  # If a date is provided
+        filters.append(Member.departmentName == department)
+    if ageRange != "ar":
+        # "1,2"  # If a specific status is provided
+        ranges = list(map(int, ageRange.split(",")))
+        filters.append(and_(Member.age >= str(ranges[0]), Member.age <= str(ranges[1])))
+    if birthMonth != "bm":
+        # "07"  # If a specific status is provided
+        filters.append(func.substr(Member.dateOfBirth, 6, 2) == birthMonth)
+
+    member = await db.execute(select(Member).where(and_(*filters))) 
+    member_data = member.scalars().all()
+    ordered_member_data = [MemberResponse.from_orm(member) for member in member_data]  
+
+    return ordered_member_data
 

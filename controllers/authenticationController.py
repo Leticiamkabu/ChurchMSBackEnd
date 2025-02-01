@@ -478,7 +478,7 @@ async def data_transfere(table_name: str):
     # DESTINATION_DB_URL = 'postgresql://dbmaster:U49531PObSfZ@10.0.30.15:5432/mysay'
 
     SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/ctcCMSLocal"
-    DESTINATION_DB_URL = "postgresql://ctc_rv4h_user:fqnsiIDlTy2GiNVqHrO87AHI3PvczSuv@dpg-cti1303tq21c739vinmg-a.oregon-postgres.render.com/ctc_rv4h"
+    DESTINATION_DB_URL = "postgresql://ctc_jpum_user:FzSC8t3c37enlO1vsK2XqfxC1Gv6nNCV@dpg-cubqb0pu0jms73bvo3kg-a.oregon-postgres.render.com/ctc_jpum"
 
     # Replace 'your_table_name' with the actual table name you want to transfer
     TABLE_NAME = table_name
