@@ -468,3 +468,6 @@ async def sort_member_data(db: db_dependency, age: str, ageRange: str, departmen
 
     return ordered_member_data
 
+    
+
+# send notification to members

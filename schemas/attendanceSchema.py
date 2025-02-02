@@ -5,7 +5,7 @@ import uuid
 
 
 class AttendanceSchema(BaseModel):
-    id : uuid.UUID
+    # id : uuid.UUID
     memberID: str
     name: str
     status: str
