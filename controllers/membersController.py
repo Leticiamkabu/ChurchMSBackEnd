@@ -303,15 +303,28 @@ async def get_member_by_id( member_id: uuid.UUID ,db: db_dependency):
 @router.get("/members/get_member_by_words/{words}")
 async def get_member_by_words( words: str ,db: db_dependency):
 
+    name = words.split()
+
+    search_conditions = [
+    or_(
+        Member.firstname.ilike(f"%{word}%"),
+        Member.middlename.ilike(f"%{word}%"),
+        Member.lastname.ilike(f"%{word}%")
+    )
+    for word in name
+]
+
+    query = select(Member).filter(*search_conditions)
+# results = query.all()
 
     # Modify the query to check if the search string is present in firstname, lastname, or email
-    query = select(Member).where(
-        or_(
-            Member.firstname.ilike(f"%{words}%"),  # Case-insensitive match
-            Member.lastname.ilike(f"%{words}%"),
-            Member.middlename.ilike(f"%{words}%")
-        )
-    )
+    # query = select(Member).where(
+    #     or_(
+    #         Member.firstname.ilike(f"%{words}%"),  # Case-insensitive match
+    #         Member.lastname.ilike(f"%{words}%"),
+    #         Member.middlename.ilike(f"%{words}%")
+    #     )
+    # )
 
     # Execute the query
     result = await db.execute(query)
@@ -321,7 +334,7 @@ async def get_member_by_words( words: str ,db: db_dependency):
     
     
     if members_data  == []:
-        raise HTTPException(status_code=200, detail="Members with the given names do not exist")
+        raise HTTPException(status_code=200, detail="Members with the given names do not exist" )
     
     return members_data
 
@@ -394,7 +407,7 @@ async def update_member(db: db_dependency,member_id: str, member_input: dict):
 
 # delete user
 
-@router.delete("/members/delete_member_by_id")
+@router.delete("/members/delete_member_by_id/{member_id}")
 async def delete_member_by_id(member_id: uuid.UUID, db: db_dependency):
 
     result = await db.execute(select(Member).where(Member.id == member_id))
