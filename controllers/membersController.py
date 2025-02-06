@@ -361,7 +361,7 @@ async def get_total_number_of_members(db: db_dependency):
 
 
 @router.patch("/members/update_individual_member_fields/{member_id}")
-async def update_member(db: db_dependency,member_id: str, member_input: dict):
+async def update_member(db: db_dependency,member_id: str, member_input: MemberSchema):
     
     logger.info("Endpoint: update_member called for member_id: %s", member_id)
     
@@ -379,7 +379,7 @@ async def update_member(db: db_dependency,member_id: str, member_input: dict):
     
     # Convert user data and input into dictionaries
     converted_member_data = member_data.__dict__
-    inputs = member_input
+    inputs = member_input.__dict__
 
 
     # Only update fields that are present in both user data and input
@@ -399,7 +399,7 @@ async def update_member(db: db_dependency,member_id: str, member_input: dict):
     
     logger.info("Member data updated successfully for member_id: %s", member_id)
     
-    return member_data
+    return {"message": "Member details update successful", "Member": member_data}
     
     
 
@@ -482,5 +482,66 @@ async def sort_member_data(db: db_dependency, age: str, ageRange: str, departmen
     return ordered_member_data
 
     
+
+# create member
+@router.post("/members/update_member_image/{name}")  # done connecting
+async def update_member_image(db: db_dependency, fullname : str = Form(...),  file: UploadFile = File(...)):
+
+    logger.info("Endpoint : update_member_image")
+
+    memberImageData = await db.execute(select(MemberImage).where(MemberImage.fullname == fullname))
+    memberImageData_data = memberImageData.scalar()
+
+    print("sdfghj", memberImageData_data)
+    
+    if memberImageData_data  == None:
+        raise HTTPException(status_code=200, detail="Member Image with name does not exist")
+
+    # Validate file type (e.g., images only)
+    allowed_file_types = ["image/jpeg", "image/png", "image/gif"]
+    if file.content_type not in allowed_file_types:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Allowed types: jpeg, png, gif.")
+    
+    #  Read the file content as binary data
+    member_image_data = await file.read()
+    
+    # Convert to Base64
+    image_base64 = base64.b64encode(member_image_data).decode('utf-8')
+
+
+    memberImageData.image = image_base64
+    memberImageData.image = file.filename
+   
+    
+    
+    await db.commit()
+    
+    logger.info("Member image updated and saved in the database with id %s ", memberImageData_data.id)
+
+    return {"message": "Member image update successful", "member_image_id": memberImageData_data.id}
+
+
+
+
+
+# create member
+@router.get("/members/get_member_image/{fullname}")  # done connecting
+async def get_member_image(db: db_dependency, fullname : str):
+
+    logger.info("Endpoint : update_member_image")
+
+    memberImageData = await db.execute(select(MemberImage).where(MemberImage.fullname == fullname))
+    memberImageData_data = memberImageData.scalar()
+
+    print("sdfghj", memberImageData_data)
+    
+    if memberImageData_data  == None:
+        raise HTTPException(status_code=200, detail="Member Image with name does not exist")
+
+
+    
+    logger.info("Member image data queried successful . Data :  %s ", memberImageData_data)
+
+    return {"message": "Member image data queried successful", "member_image_data": memberImageData_data}
 
 # send notification to members

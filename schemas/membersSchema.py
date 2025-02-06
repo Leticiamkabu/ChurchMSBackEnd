@@ -4,7 +4,6 @@ from pydantic import BaseModel
 import uuid
 
 class MemberSchema(BaseModel):
-    id : uuid.UUID
     title : str
     firstname : str
     middlename : str
