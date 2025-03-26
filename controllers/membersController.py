@@ -84,9 +84,9 @@ async def create_member(db: db_dependency, member: MemberSchema):
 
     member_data = Member(
                 title=member.title,
-                firstname=member.firstname,
-                middlename=member.middlename,
-                lastname =member.lastname,
+                firstName=member.firstname,
+                middleName=member.middlename,
+                lastName =member.lastname,
                 dateOfBirth = member.dateOfBirth,
                 age = age,
                 gender = member.gender,
@@ -307,9 +307,9 @@ async def get_member_by_words( words: str ,db: db_dependency):
 
     search_conditions = [
     or_(
-        Member.firstname.ilike(f"%{word}%"),
-        Member.middlename.ilike(f"%{word}%"),
-        Member.lastname.ilike(f"%{word}%")
+        Member.firstName.ilike(f"%{word}%"),
+        Member.middleName.ilike(f"%{word}%"),
+        Member.lastName.ilike(f"%{word}%")
     )
     for word in name
 ]
@@ -544,4 +544,188 @@ async def get_member_image(db: db_dependency, fullname : str):
 
     return {"message": "Member image data queried successful", "member_image_data": memberImageData_data}
 
+
+
+
 # send notification to members
+
+import json
+@router.post("/notification")  # done connecting
+async def send_notification():
+
+    api_key = '$2a$10$E4el2beQf7/QFr1BQjAXmetkkJ2COBYiWI.stZItUHgSCUtM2LXsq' # Replace with your API Key
+    username = 'CTC' # Replace with your Username
+
+    headers = {
+    'Content-Type': 'application/json',
+    'API-KEY': api_key,
+    'USERNAME': username
+    }
+    print(headers)
+    post_data = {
+  'phone_number': '0556852682',
+  'message': 'testing'
+    }
+
+    response = requests.post('https://frogapi.wigal.com.gh/api/v3/sms/send', headers=headers, data=json.dumps(post_data))
+
+    return response.json()
+
+
+
+
+
+
+
+
+
+# Function to Process Excel File
+async def preprocess_excel(contents, filename):
+
+#
+    # Extract file extension safely
+    file_extension = os.path.splitext(filename)[1].lower()
+
+    # Ensure contents is not empty
+    if not contents:
+        raise ValueError("Uploaded file is empty.")
+
+    # Read the Excel file based on extension
+    if file_extension == ".xlsx":
+        df = pd.read_excel(io.BytesIO(contents), engine="openpyxl")
+    elif file_extension == ".xls":
+        print("yes")
+        print(pd.read_excel(io.BytesIO(contents), engine="xlrd"))
+        df = pd.read_excel(io.BytesIO(contents), engine="xlrd")
+        print(pd.read_excel(io.BytesIO(contents), engine="xlrd"))
+    else:
+        raise ValueError("Unsupported file format. Please upload an Excel file.") 
+
+    # Normalize column names
+    df.columns = [col.lower().strip() for col in df.columns]
+
+    # Convert all text columns to string
+    df = df.astype(str).applymap(lambda x: x.strip() if isinstance(x, str) else None)
+
+    return df
+
+
+
+    # import data to pupulate database
+import pandas as pd
+import io
+@router.post("/upload-excel/")
+async def upload_excel(db: db_dependency , file: UploadFile = File(...)):
+
+    try:
+        # Read the file into a pandas DataFrame
+        # Read the file content
+        contents = await file.read()
+        
+        # Process the Excel file
+        df = await preprocess_excel(contents, file.filename )
+        # df = pd.read_excel(io.BytesIO(contents))
+
+        df_columns = [col.lower().strip() for col in df.columns]
+
+        memberColums = [colum.name for colum in Member.__table__.columns]
+        print(memberColums) 
+
+    # List to store processed records
+        processed_records = []
+
+        # Iterate through each row in the DataFrame
+        # for _, row in df.iterrows():
+        #     row_dict = {col: row[col] for col in df_columns if col in memberColums}
+        #     processed_records.append(row_dict)
+
+        # print(processed_records)
+
+        processed_records = []
+        for _, row in df.iterrows():
+            row_dict = {col: str(row[col]).strip() if pd.notna(row[col]) else None for col in df_columns if col in memberColums}
+            processed_records.append(row_dict)
+
+        print(processed_records )
+
+
+        for record in processed_records:
+        # Create a new Member instance with the processed data
+            new_member = Member(**record)  # Unpacking dictionary into Member fields
+            db.add(new_member)  # Add the new instance to the session
+        await db.commit()
+   
+
+        # memberColums = [colum for colum in MemberSchema]
+        # print(memberColums)
+        # Validate required columns
+        # required_columns = {"name", "category", "price"}
+        # if not required_columns.issubset(df.columns):
+        #     raise HTTPException(status_code=400, detail=f"Missing required columns: {required_columns - set(df.columns)}")
+
+        # Insert data into the database
+        # for _, row in df.iterrows():
+        #     item = Item(name=row["name"], category=row["category"], price=row["price"])
+        #     db.add(item)
+        
+        # db.commit()
+        return {"message": "Data inserted successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+from docx import Document
+@router.post("/upload-docx/")
+async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
+    try:
+        # Ensure the file is a .docx file
+        if not file.filename.endswith(".docx"):
+            raise HTTPException(status_code=400, detail="Only .docx files are supported.")
+
+        # Read the file content
+        contents = await file.read()
+
+        # Convert bytes to a file-like object
+        doc_file = io.BytesIO(contents)
+
+        # Load the .docx document
+        doc = Document(doc_file)
+
+        # member_data = {key: value for key, value in record.items() if key in MemberSchema.model_fields}
+        # print("hi ",member_data)
+        # Extract table data
+       # Extract table data
+        tables_data = []
+
+        for table in doc.tables:
+            rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+            if rows:
+                column_names = rows[0]  # First row contains column names
+                data_rows = rows[1:]  # Remaining rows are data
+                
+                structured_data = [dict(zip(column_names, row)) for row in data_rows]
+                tables_data.extend(structured_data)
+
+        new_members = []
+        print("table data ", tables_data)
+        for record in tables_data:
+            # Map the extracted data to the MemberSchema dynamically
+            member_data = {key: value for key, value in record.items() if key in MemberSchema.model_fields}
+            print("1member", member_data)
+            # Ensure required fields are handled properly (e.g., default values)
+            if "email" not in member_data:
+                member_data["email"] = None  # Example: Set a default if missing
+            
+            # Create a new Member instance
+            print("2member", member_data)
+            new_member = Member(**member_data)
+            db.add(new_member)
+            new_members.append(new_member)
+
+        # Commit changes
+        # await db.commit()
+
+        return {"message": "Members added successfully", "total_members": len(new_members)}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")

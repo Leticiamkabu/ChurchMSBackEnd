@@ -9,9 +9,9 @@ class Member(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text(
         "uuid_generate_v4()"), unique=True, index=True)
     title = Column(String, nullable=False)
-    firstname = Column(String, nullable=False)
-    middlename = Column(String, nullable=False)
-    lastname = Column(String, nullable=False)
+    firstName = Column(String, nullable=False)
+    middleName = Column(String, nullable=False)
+    lastName = Column(String, nullable=False)
     dateOfBirth = Column(String, nullable=False)
     age = Column(String, nullable=False)
     gender= Column(String, nullable=False)

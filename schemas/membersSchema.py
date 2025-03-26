@@ -5,9 +5,9 @@ import uuid
 
 class MemberSchema(BaseModel):
     title : str
-    firstname : str
-    middlename : str
-    lastname : str
+    firstName : str
+    middleName : str
+    lastName : str
     dateOfBirth : str
     age : str
     gender : str

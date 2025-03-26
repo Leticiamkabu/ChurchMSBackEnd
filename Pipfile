@@ -27,6 +27,7 @@ openpyxl = "*"
 xlrd = "*"
 pandas = "*"
 python-magic = "*"
+python-docx = "*"
 
 [dev-packages]
 
