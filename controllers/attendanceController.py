@@ -91,7 +91,7 @@ async def create_user(db: db_dependency, attendance: AttendanceSchema):
 
     attendance_data = Attendance(
                 memberID= attendance.memberID,
-                fullname = attendance.name ,
+                fullName = attendance.name ,
                 date = str(date.today()),
                 status= attendance.status,
                 serviceType = attendance.serviceType
@@ -286,6 +286,7 @@ async def update_attendance(db: db_dependency, attendance_id: str, attendance_in
     
     # Convert user data and input into dictionaries
     converted_attendance_data = attendance_data.__dict__
+    converted_attendance_data.updatedOn = datetime.today()
     inputs = attendance_input
 
 

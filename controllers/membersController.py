@@ -79,10 +79,14 @@ async def create_member(db: db_dependency, member: MemberSchema):
             status_code=200,
             detail="No data provided. Member data rejected."
         )
+
+    result = await db.execute(select(func.count(Member.id)))
+    count = result.scalar() 
     
     age = int(date.today().strftime("%Y")) - int(member.age[0:4])
 
     member_data = Member(
+                memberID = generatedId(count),
                 title=member.title,
                 firstName=member.firstname,
                 middleName=member.middlename,
@@ -124,6 +128,7 @@ async def create_member(db: db_dependency, member: MemberSchema):
                 confirmed = member.confirmed,
                 dateConfirmed = member.dateConfirmed,
                 comment = member.comment,
+                
 
             )
 
@@ -145,7 +150,7 @@ async def create_member(db: db_dependency, member: MemberSchema):
 
 # create member
 @router.post("/members/create_member_image")  # done connecting
-async def create_member_image(db: db_dependency, fullname : str = Form(...),  file: UploadFile = File(...)):
+async def create_member_image(db: db_dependency, fullName : str = Form(...),  file: UploadFile = File(...)):
 
     logger.info("Endpoint : create_member_image")
 
@@ -162,7 +167,7 @@ async def create_member_image(db: db_dependency, fullname : str = Form(...),  fi
     
     # Create an image instance and associate it with the new item
     new_member_image = MemberImage(
-        fullname = fullname,  # Use new_item_data.id here
+        fullName = fullname,  # Use new_item_data.id here
         image = image_base64,
         imageFileName=file.filename
     )
@@ -379,6 +384,7 @@ async def update_member(db: db_dependency,member_id: str, member_input: MemberSc
     
     # Convert user data and input into dictionaries
     converted_member_data = member_data.__dict__
+    converted_member_data.updatedOn = datetime.today()
     inputs = member_input.__dict__
 
 
@@ -545,6 +551,10 @@ async def get_member_image(db: db_dependency, fullname : str):
     return {"message": "Member image data queried successful", "member_image_data": memberImageData_data}
 
 
+def generatedId(lastNumber):
+    id_constant = 'CTC_M_00'
+    id_number = lastNumber + 1
+    return id_constant + str(id_number)
 
 
 # send notification to members
@@ -674,6 +684,15 @@ async def upload_excel(db: db_dependency , file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+def to_camel_case(snake_str):
+    """Convert snake_case or other formats to camelCase"""
+    components = re.split(r'[_\s]+', snake_str)  # Split by underscores or spaces
+    return components[0].lower() + ''.join(x.capitalize() for x in components[1:])
+
+
+
+
 from docx import Document
 @router.post("/upload-docx/")
 async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
@@ -691,41 +710,47 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
         # Load the .docx document
         doc = Document(doc_file)
 
-        # member_data = {key: value for key, value in record.items() if key in MemberSchema.model_fields}
-        # print("hi ",member_data)
-        # Extract table data
-       # Extract table data
-        tables_data = []
+                # Each table represents part of each individual's data
+        tables = [table for table in doc.tables]
 
-        for table in doc.tables:
-            rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
-            if rows:
-                column_names = rows[0]  # First row contains column names
-                data_rows = rows[1:]  # Remaining rows are data
-                
-                structured_data = [dict(zip(column_names, row)) for row in data_rows]
-                tables_data.extend(structured_data)
-
-        new_members = []
-        print("table data ", tables_data)
-        for record in tables_data:
-            # Map the extracted data to the MemberSchema dynamically
-            member_data = {key: value for key, value in record.items() if key in MemberSchema.model_fields}
-            print("1member", member_data)
-            # Ensure required fields are handled properly (e.g., default values)
-            if "email" not in member_data:
-                member_data["email"] = None  # Example: Set a default if missing
+        # Extract headers and rows from each table
+        table_rows = []
+        for table in tables:
+            rows = [[cell.text.strip() for cell in row.cells] for row in table.rows if any(cell.text.strip() for cell in row.cells)]
             
-            # Create a new Member instance
-            print("2member", member_data)
-            new_member = Member(**member_data)
-            db.add(new_member)
-            new_members.append(new_member)
+            header = rows[0]
+            data_rows = rows[1:]
+            
+            # Convert each row to a dict using the table's header
+            row_dicts = [dict(zip(header, row)) for row in data_rows]
+            table_rows.append(row_dicts)
 
-        # Commit changes
-        # await db.commit()
+        # Now combine the matching rows across all tables
+        individuals_data = []
+        for i in range(len(table_rows[0])):  # assuming all tables have same number of rows
+            person_data = {}
+            for table in table_rows:
+                person_data.update(table[i])  # merge dictionaries for same person from each table
+            individuals_data.append(person_data)
 
-        return {"message": "Members added successfully", "total_members": len(new_members)}
+        
+
+        counts = 0
+        new_members_list = []
+        for member_data in individuals_data:
+            counts = counts + 1
+            result = await db.execute(select(func.count(Member.id)))
+            member_count = result.scalar()
+
+            # print("yiiy",member_data)
+            data = {to_camel_case(k): v for k, v in member_data.items() if k.strip()}
+            data["memberID"] = generatedId(member_count)
+            new_members = Member(**data)
+            new_members_list.append(new_members)
+            db.add(new_members)
+            await db.commit()
+        
+        return {"message": "Members added successfully", "total_members": len(new_members_list)} 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")

@@ -99,8 +99,8 @@ async def create_user(db: db_dependency, user: CreateUserSchema):
     print("pr ",string_privileges)
     user_data = User(
                 email=user.email,
-                firstname=user.firstname,
-                lastname =user.lastname,
+                firstName=user.firstName,
+                lastName =user.lastName,
                 phoneNumber=user.phoneNumber,
                 password =hashed_password.decode('utf-8'),
                 role = user.role,
@@ -135,8 +135,8 @@ async def create_admin_user( db: db_dependency):
     hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
     admin_user_data = User(
                 email= "kabuleticia36@gmail.com",
-                firstname="so",
-                lastname ="lo",
+                firstName="so",
+                lastName ="lo",
                 phoneNumber="0556852683",
                 password =hashed_password.decode('utf-8'),
                 role ="ADMIN",
@@ -417,6 +417,7 @@ async def update_user(db: db_dependency,user_id: str, user_input: CreateUserSche
     hashed_password = bcrypt.hashpw(user_input.password.encode('utf-8'), bcrypt.gensalt())
     # Convert user data and input into dictionaries
     converted_user_data = user_data.__dict__
+    user_data.updated = datetime.today()
     user_input.privileges = ','.join(user_input.privileges)
     user_input.password = hashed_password.decode('utf-8')
     inputs = user_input.__dict__

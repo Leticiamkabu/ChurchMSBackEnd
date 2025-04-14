@@ -11,8 +11,8 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text(
         "uuid_generate_v4()"), unique=True, index=True)
-    firstname = Column(String, nullable=False)
-    lastname = Column(String, nullable=False)
+    firstName = Column(String, nullable=False)
+    lastName = Column(String, nullable=False)
     password= Column(String, nullable=False)
     email = Column(String, nullable=True, unique=True)
     phoneNumber = Column(String, nullable=False)
@@ -20,6 +20,8 @@ class User(Base):
     role = Column(String, nullable=True,default="UNIDENTIFIED")
     privileges = Column(String, nullable=True,default="UNIDENTIFIED")
     created_on = Column(DateTime, nullable=True,
+                        default=func.current_timestamp())
+    updated_on = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
 
 

@@ -14,11 +14,9 @@ db_host = os.getenv('DB_HOST')
 db_name = os.getenv('DB_NAME')
 
 
-
 # Ensure that all the necessary environment variables are loaded
 if not all([db_user, db_pass, db_host, db_name]):
     raise EnvironmentError("Missing one or more required environment variables for database connection")
-
 
 
 # Construct the async database URL
