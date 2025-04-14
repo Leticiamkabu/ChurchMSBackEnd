@@ -8,6 +8,7 @@ class Member(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text(
         "uuid_generate_v4()"), unique=True, index=True)
+    memberID = Column(String, nullable=False)
     title = Column(String, nullable=False)
     firstName = Column(String, nullable=False)
     middleName = Column(String, nullable=False)
@@ -52,6 +53,8 @@ class Member(Base):
 
     createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
+    updatedOn = Column(DateTime, nullable=True,
+                        default=func.current_timestamp())
 
 
 
@@ -61,11 +64,14 @@ class MemberImage(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text(
         "uuid_generate_v4()"), unique=True, index=True)
-    fullname = Column(String,nullable=False)
+    fullName = Column(String,nullable=False)
     image = Column(String, nullable=True)  # Column to store binary image data
     imageFileName = Column(String, nullable=True)
     createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
+    updatedOn = Column(DateTime, nullable=True,
+                        default=func.current_timestamp())
+
 
     # use it in the profile model
     # user = relationship("User", back_populates="profile")

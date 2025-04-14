@@ -14,7 +14,7 @@ class AttendanceSchema(BaseModel):
 class AttendanceResponseSchema(BaseModel):
     id : uuid.UUID
     memberID: str
-    fullname: str
+    fullName: str
     status: str
     serviceType: str
     
