@@ -19,9 +19,9 @@ class User(Base):
     lastLogedin= Column(String, nullable=True, default="NOT_SET")
     role = Column(String, nullable=True,default="UNIDENTIFIED")
     privileges = Column(String, nullable=True,default="UNIDENTIFIED")
-    created_on = Column(DateTime, nullable=True,
+    createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
-    updated_on = Column(DateTime, nullable=True,
+    updatedOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
 
 

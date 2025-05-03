@@ -70,7 +70,7 @@ router = APIRouter()
 
 
 Role = ["DATA CLERK", "ACCOUNTS", "ADMINISTRATOR" , "DEPARTMENTAL LEADERS" , "ADMIN"]
-Privilege = ["Add members", "Create Users", "Get User Details" , "Take Attendance", "Get Attandance Overview", "Get Member Details" ,"Everything"]
+Privilege = ["Add members", "Create Users", "Get User Details" , "Take Attendance", "Get Attendance Overview", "Generate Report","Get Member Details" ,"Everything"]
 
 # create user
 @router.post("/auth/create_user")  # done connecting
@@ -478,8 +478,10 @@ async def data_transfere(table_name: str):
     # SOURCE_DB_URL = 'postgresql://my_say_user:tbcPzQkvP3WCD44NnRG6vrQz9kCMbZqD@dpg-cls55tjip8as73a3duug-a.oregon-postgres.render.com/my_say'
     # DESTINATION_DB_URL = 'postgresql://dbmaster:U49531PObSfZ@10.0.30.15:5432/mysay'
 
-    SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/ctcCMSLocal"
-    DESTINATION_DB_URL = "postgresql://ctc_jpum_user:FzSC8t3c37enlO1vsK2XqfxC1Gv6nNCV@dpg-cubqb0pu0jms73bvo3kg-a.oregon-postgres.render.com/ctc_jpum"
+    SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/churchMSLocal"
+    DESTINATION_DB_URL = "postgresql://ctc_dev_12gt_user:D47MC1Bq7TIgU4S6cQg41w5XFrXDoo2O@dpg-d0am3nur433s73da1uhg-a.oregon-postgres.render.com/ctc_dev_12gt"
+
+    #postgresql://ctc_dev_12gt_user:D47MC1Bq7TIgU4S6cQg41w5XFrXDoo2O@dpg-d0am3nur433s73da1uhg-a.oregon-postgres.render.com/ctc_dev_12gt
 
     # Replace 'your_table_name' with the actual table name you want to transfer
     TABLE_NAME = table_name
