@@ -622,67 +622,67 @@ async def preprocess_excel(contents, filename):
 
 
     # import data to pupulate database
-import pandas as pd
-import io
-@router.post("/upload-excel/")
-async def upload_excel(db: db_dependency , file: UploadFile = File(...)):
+# import pandas as pd
+# import io
+# @router.post("/upload-excel/")
+# async def upload_excel(db: db_dependency , file: UploadFile = File(...)):
 
-    try:
-        # Read the file into a pandas DataFrame
-        # Read the file content
-        contents = await file.read()
+#     try:
+#         # Read the file into a pandas DataFrame
+#         # Read the file content
+#         contents = await file.read()
         
-        # Process the Excel file
-        df = await preprocess_excel(contents, file.filename )
-        # df = pd.read_excel(io.BytesIO(contents))
+#         # Process the Excel file
+#         df = await preprocess_excel(contents, file.filename )
+#         # df = pd.read_excel(io.BytesIO(contents))
 
-        df_columns = [col.lower().strip() for col in df.columns]
+#         df_columns = [col.lower().strip() for col in df.columns]
 
-        memberColums = [colum.name for colum in Member.__table__.columns]
-        print(memberColums) 
+#         memberColums = [colum.name for colum in Member.__table__.columns]
+#         print(memberColums) 
 
-    # List to store processed records
-        processed_records = []
+#     # List to store processed records
+#         processed_records = []
 
-        # Iterate through each row in the DataFrame
-        # for _, row in df.iterrows():
-        #     row_dict = {col: row[col] for col in df_columns if col in memberColums}
-        #     processed_records.append(row_dict)
+#         # Iterate through each row in the DataFrame
+#         # for _, row in df.iterrows():
+#         #     row_dict = {col: row[col] for col in df_columns if col in memberColums}
+#         #     processed_records.append(row_dict)
 
-        # print(processed_records)
+#         # print(processed_records)
 
-        processed_records = []
-        for _, row in df.iterrows():
-            row_dict = {col: str(row[col]).strip() if pd.notna(row[col]) else None for col in df_columns if col in memberColums}
-            processed_records.append(row_dict)
+#         processed_records = []
+#         for _, row in df.iterrows():
+#             row_dict = {col: str(row[col]).strip() if pd.notna(row[col]) else None for col in df_columns if col in memberColums}
+#             processed_records.append(row_dict)
 
-        print(processed_records )
+#         print(processed_records )
 
 
-        for record in processed_records:
-        # Create a new Member instance with the processed data
-            new_member = Member(**record)  # Unpacking dictionary into Member fields
-            db.add(new_member)  # Add the new instance to the session
-        await db.commit()
+#         for record in processed_records:
+#         # Create a new Member instance with the processed data
+#             new_member = Member(**record)  # Unpacking dictionary into Member fields
+#             db.add(new_member)  # Add the new instance to the session
+#         await db.commit()
    
 
-        # memberColums = [colum for colum in MemberSchema]
-        # print(memberColums)
-        # Validate required columns
-        # required_columns = {"name", "category", "price"}
-        # if not required_columns.issubset(df.columns):
-        #     raise HTTPException(status_code=400, detail=f"Missing required columns: {required_columns - set(df.columns)}")
+#         # memberColums = [colum for colum in MemberSchema]
+#         # print(memberColums)
+#         # Validate required columns
+#         # required_columns = {"name", "category", "price"}
+#         # if not required_columns.issubset(df.columns):
+#         #     raise HTTPException(status_code=400, detail=f"Missing required columns: {required_columns - set(df.columns)}")
 
-        # Insert data into the database
-        # for _, row in df.iterrows():
-        #     item = Item(name=row["name"], category=row["category"], price=row["price"])
-        #     db.add(item)
+#         # Insert data into the database
+#         # for _, row in df.iterrows():
+#         #     item = Item(name=row["name"], category=row["category"], price=row["price"])
+#         #     db.add(item)
         
-        # db.commit()
-        return {"message": "Data inserted successfully"}
+#         # db.commit()
+#         return {"message": "Data inserted successfully"}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 def to_camel_case(snake_str):
