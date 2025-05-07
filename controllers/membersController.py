@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import uuid
 from fastapi.responses import FileResponse 
 from datetime import datetime, date
-from sqlalchemy import select, or_, func, and_
+from sqlalchemy import select, or_, func, and_,update
 import requests
 from passlib.context import CryptContext
 import bcrypt
@@ -83,14 +83,17 @@ async def create_member(db: db_dependency, member: MemberSchema):
     result = await db.execute(select(func.count(Member.id)))
     count = result.scalar() 
     
-    age = int(date.today().strftime("%Y")) - int(member.age[0:4])
+    if member.dateOfBirth != "":
+        age = int(date.today().strftime("%Y")) - int(member.dateOfBirth[0:4])
+    else:
+        age = member.age
 
     member_data = Member(
                 memberID = generatedId(count),
                 title=member.title,
-                firstName=member.firstname,
-                middleName=member.middlename,
-                lastName =member.lastname,
+                firstName=member.firstName,
+                middleName=member.middleName,
+                lastName =member.lastName,
                 dateOfBirth = member.dateOfBirth,
                 age = age,
                 gender = member.gender,
@@ -557,36 +560,6 @@ def generatedId(lastNumber):
     return id_constant + str(id_number)
 
 
-# send notification to members
-
-import json
-@router.post("/notification")  # done connecting
-async def send_notification():
-
-    api_key = '$2a$10$E4el2beQf7/QFr1BQjAXmetkkJ2COBYiWI.stZItUHgSCUtM2LXsq' # Replace with your API Key
-    username = 'CTC' # Replace with your Username
-
-    headers = {
-    'Content-Type': 'application/json',
-    'API-KEY': api_key,
-    'USERNAME': username
-    }
-    print(headers)
-    post_data = {
-  'phone_number': '0556852682',
-  'message': 'testing'
-    }
-
-    response = requests.post('https://frogapi.wigal.com.gh/api/v3/sms/send', headers=headers, data=json.dumps(post_data))
-
-    return response.json()
-
-
-
-
-
-
-
 
 
 # Function to Process Excel File
@@ -623,7 +596,6 @@ async def preprocess_excel(contents, filename):
 
     # import data to pupulate database
 # import pandas as pd
-# import io
 # @router.post("/upload-excel/")
 # async def upload_excel(db: db_dependency , file: UploadFile = File(...)):
 
@@ -694,6 +666,7 @@ def to_camel_case(snake_str):
 
 
 from docx import Document
+import io
 @router.post("/upload-docx/")
 async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
     try:
@@ -718,25 +691,37 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
         for table in tables:
             rows = [[cell.text.strip() for cell in row.cells] for row in table.rows if any(cell.text.strip() for cell in row.cells)]
             
-            header = rows[0]
-            data_rows = rows[1:]
-            
+            header = rows[0][1:]
+            print(header)
+            data_rows = [row[1:] for row in rows[1:]]
+            # print(data_rows)
+            print("First data row:", data_rows[0])
+            print("Header:", header)
             # Convert each row to a dict using the table's header
             row_dicts = [dict(zip(header, row)) for row in data_rows]
+            # print("yes",row_dicts)
             table_rows.append(row_dicts)
+            print("First data row:", table_rows[0])
 
+
+        
+
+        print("yes", table_rows)
         # Now combine the matching rows across all tables
         individuals_data = []
         for i in range(len(table_rows[0])):  # assuming all tables have same number of rows
+            print("ys")
             person_data = {}
             for table in table_rows:
                 person_data.update(table[i])  # merge dictionaries for same person from each table
             individuals_data.append(person_data)
+            print("person: ", person_data) 
 
         
 
         counts = 0
         new_members_list = []
+        skiped_members_list = []
         for member_data in individuals_data:
             counts = counts + 1
             result = await db.execute(select(func.count(Member.id)))
@@ -744,13 +729,45 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
 
             # print("yiiy",member_data)
             data = {to_camel_case(k): v for k, v in member_data.items() if k.strip()}
-            data["memberID"] = generatedId(member_count)
-            new_members = Member(**data)
-            new_members_list.append(new_members)
-            db.add(new_members)
-            await db.commit()
+            print("hfjhfghj", data)
+
+            stmt = select(Member).where(
+                and_(
+                    Member.firstName == data['firstName'],
+                    Member.middleName == data['middleName'],
+                    Member.lastName == data['lastName']
+                )
+            )
+            result = await db.execute(stmt)
+            existing_member = result.scalar_one_or_none()
+
+
+            if existing_member:
+                print("member exists")
+                current_dept = existing_member.departmentName or ""
+                new_dept = data['departmentName']
+    
+                if new_dept not in current_dept:
+                    updated_dept = f"{current_dept}, {new_dept}" if current_dept else new_dept
+                    await db.execute(
+                        update(Member)
+                        .where(Member.id == existing_member.id)
+                        .values(departmentName=updated_dept)
+                    )
+                else:
+                    skiped_members_list.append(data['firstName'] + data['middleName'] + data['lastName'])
+                    pass
+                    # raise HTTPException(status_code=500, detail="User and department name already exist")
+
+            else:
+
+                data["memberID"] = generatedId(member_count)
+                new_members = Member(**data)
+                new_members_list.append(new_members)
+                db.add(new_members)
+                await db.commit()
         
-        return {"message": "Members added successfully", "total_members": len(new_members_list)} 
+        return {"message": "Members added successfully", "total_members": len(new_members_list),"skiped members": skiped_members_list} 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
