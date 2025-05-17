@@ -79,6 +79,13 @@ async def create_user(db: db_dependency, user: CreateUserSchema):
     logger.info("Endpoint : create_user")
 
 # check if the email already exist, it yes dont resister( todo)
+    result = await db.execute(
+        select(User).where(User.email == user.email)
+    )
+    attendance_data = result.scalar()
+
+    if attendance_data :
+        return "Email already exist"
 
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
 

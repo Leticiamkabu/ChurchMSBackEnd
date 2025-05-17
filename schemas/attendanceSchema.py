@@ -10,6 +10,7 @@ class AttendanceSchema(BaseModel):
     name: str
     status: str
     serviceType: str
+    markedBy: str
 
 class AttendanceResponseSchema(BaseModel):
     id : uuid.UUID
@@ -17,6 +18,7 @@ class AttendanceResponseSchema(BaseModel):
     fullName: str
     status: str
     serviceType: str
+    markedBy: str
     
 
     class Config:

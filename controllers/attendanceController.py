@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import uuid
 import os
 from fastapi.responses import FileResponse 
-from datetime import date
+from datetime import date , datetime
 from sqlalchemy import select, or_, func, and_
 import requests
 from passlib.context import CryptContext
@@ -14,6 +14,7 @@ import random
 
 from helperFunctions.exportFile import *
 from models.attendanceModel import *
+from models.membersModel import *
 # from models.profileModel import *
 # from models.itemsModel import *
 from schemas.attendanceSchema import *
@@ -94,7 +95,8 @@ async def create_user(db: db_dependency, attendance: AttendanceSchema):
                 fullName = attendance.name ,
                 date = str(date.today()),
                 status= attendance.status,
-                serviceType = attendance.serviceType
+                serviceType = attendance.serviceType,
+                markedBy = attendance.markedBy
                 
 
             )
@@ -200,10 +202,22 @@ async def get_attendance_for_the_current_day( db: db_dependency):
     )
     absent_attendance = result.scalar() # Get the count result
 
-    # if total_members == 0
-    #     return "No data found"
+    #members who are not in the attendance table for the current day
+    attendance_Id_List = []
+    result = await db.execute(select(Attendance).where(Attendance.date == str(date.today())))
+    attendance = result.scalars().all()
+    
+    for member in attendance:
+        attendance_Id_List.append(member.memberID)
+    # print("attendance lenght : ",len(attendance_Id_List))
 
-    return {"total_attendance": total_attendance, "present_attendance": present_attendance,"absent_attendance": absent_attendance}
+    result = await db.execute(
+        select(func.count()).select_from(Member).where(Member.id.notin_(attendance_Id_List))
+    )
+    absent_members = result.scalar()
+    # print("total absent members : ",absent_members) 
+
+    return {"total_attendance": total_attendance, "present_attendance": present_attendance,"absent_attendance": absent_attendance + absent_members}
 
 
 
@@ -214,7 +228,8 @@ async def get_attendance_for_the_current_day( db: db_dependency):
 @router.get("/attendance/get_attendance_data")
 async def get_attendance_data( db: db_dependency):
 
-
+    over_all_attendance_data =[]
+    attendance_List = []
     # Query to fetch attendance data based on status and date
     result = await db.execute(
         select(Attendance).where(Attendance.date == str(date.today()))
@@ -222,10 +237,42 @@ async def get_attendance_data( db: db_dependency):
     
     attendance_data = result.scalars().all()  # Fetch all matching records
 
-    if attendance_data == []:
+    for data in attendance_data:
+        over_all_attendance_data.append(data)
+
+    # get absent member list
+    for member in attendance_data:
+        attendance_List.append(member.memberID)
+    print("attendant_list : ",attendance_List)
+
+    result = await db.execute(
+        select(Member).where((Member.id.notin_(attendance_List)))
+    )
+    absent_members = result.scalars().all()
+    print("total absent members : ",len(absent_members))
+
+    modified_data = []
+    
+    for data in absent_members:
+        y = {}
+        y["memberID"] = data.id
+        y["status"] = "ABSENT"
+        y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
+        y["serviceType"] = ""
+        y["date"] = str(date.today())
+        y["markedBy"] = "Not Marked"
+        modified_data.append(y)
+
+
+    
+    for data in modified_data:
+        over_all_attendance_data.append(data)
+
+    if over_all_attendance_data == []:
         return "No data found"
 
-    return attendance_data
+    print(len(over_all_attendance_data))
+    return over_all_attendance_data
 
 
 # get present attendance data by current date
@@ -249,7 +296,8 @@ async def get_present_attendance_data( db: db_dependency):
 @router.get("/attendance/get_absent_attendance_data")
 async def get_absent_attendance_data( db: db_dependency):
 
-
+    over_all_absent_attendance_data =[]
+    attendance_List = []
     # Query to fetch attendance data based on status and date
     result = await db.execute(
         select(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "ABSENT")
@@ -257,10 +305,45 @@ async def get_absent_attendance_data( db: db_dependency):
     
     attendance_data = result.scalars().all()  # Fetch all matching records
 
-    if attendance_data == []:
+    for data in attendance_data:
+        over_all_attendance_data.append(data)
+
+    # get absent member list
+    result = await db.execute(select(Attendance).where(Attendance.date == str(date.today())))
+    attendance = result.scalars().all()
+
+    for member in attendance:
+        attendance_List.append(member.memberID)
+    print("attendant_list : ",attendance_List)
+
+    result = await db.execute(
+        select(Member).where((Member.id.notin_(attendance_List)))
+    )
+    absent_members = result.scalars().all()
+    print("total absent members : ",len(absent_members))
+
+    modified_data = []
+    
+    for data in absent_members:
+        y = {}
+        y["memberID"] = data.id
+        y["status"] = "ABSENT"
+        y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
+        y["serviceType"] = ""
+        y["date"] = str(date.today())
+        y["markedBy"] = "Not Marked"
+        modified_data.append(y)
+
+
+    
+    for data in modified_data:
+        over_all_absent_attendance_data.append(data)
+
+    if over_all_absent_attendance_data == []:
         return "No data found"
 
-    return attendance_data
+    print(len(over_all_absent_attendance_data))
+    return over_all_absent_attendance_data
 
 
 # update attendance by id
@@ -286,7 +369,7 @@ async def update_attendance(db: db_dependency, attendance_id: str, attendance_in
     
     # Convert user data and input into dictionaries
     converted_attendance_data = attendance_data.__dict__
-    converted_attendance_data.updatedOn = datetime.today()
+    converted_attendance_data['updatedOn'] = datetime.today()
     inputs = attendance_input
 
 
@@ -386,6 +469,30 @@ async def download_current_attendance_data(db: db_dependency):
                     attendance_dict[key] = value
         attendance_dicts.append(attendance_dict)
         print ("the data before the sheet ",attendance_dicts)
+
+    # get the absent member list
+    attendance_List = []
+    for member in attendance_data:
+        attendance_List.append(member.memberID)
+    print("attendant_list : ",attendance_List)
+
+    result = await db.execute(
+        select(Member).where((Member.id.notin_(attendance_List)))
+    )
+    absent_members = result.scalars().all()
+    print("total absent members : ",len(absent_members))
+
+    for data in absent_members:
+        y = {}
+        y["memberID"] = str(data.id)
+        y["status"] = "ABSENT"
+        y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
+        y["serviceType"] = ""
+        y["date"] = str(date.today())
+        y["markedBy"] = "Not Marked"
+        attendance_dicts.append(y)
+
+    print("total atendance members : ",len(attendance_dicts))
     # Check if member_data is empty
     if not attendance_data:
         raise HTTPException(status_code=200, detail="No user data exists")
@@ -597,3 +704,17 @@ async def process_csv(file: UploadFile):
         # Cleanup temporary files
         if os.path.exists(temp_input_file):
             os.remove(temp_input_file)
+
+[
+  {
+    "date": "2025-05-16",
+    "id": "80a0f737-0cd0-41f3-bf61-2f4d863488ea",
+    "fullName": "John Kofi Avorgah",
+    "memberID": "4e77c9cd-c54b-40ef-8186-64f5f7205581",
+    "serviceType": "",
+    "createdOn": "2025-05-16 13:04:13.17942+00",
+    "status": "ABSENT",
+    "markedBy": "LeticiaKabu",
+    "updatedOn": "2025-05-16 13:04:13.17942+00"
+  }
+]

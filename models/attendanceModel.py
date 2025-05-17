@@ -13,6 +13,7 @@ class Attendance(Base):
     date = Column(String, nullable=False,)
     status= Column(String, nullable=False)
     serviceType = Column(String, nullable=False)
+    markedBy = Column(String, nullable=False)
     createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
     updatedOn = Column(DateTime, nullable=True,
