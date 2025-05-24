@@ -22,8 +22,7 @@ class FirstTimersSchema(BaseModel):
         from_attributes = True  # This allows Pydantic to work with SQLAlchemy models
 
 
-class FirstTimersResponse(SMSRequestSchema):
+class FirstTimersResponse(FirstTimersSchema):
     pass  # You can add any extra fields or modifications if needed
 
 
-c

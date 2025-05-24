@@ -41,7 +41,7 @@ from fastapi import UploadFile,status, File, Form
 
 import re
 from sqlalchemy.sql import func , extract
-
+from pathlib import Path
 
 
 # # loging config
@@ -434,8 +434,11 @@ async def delete_member_by_id(member_id: uuid.UUID, db: db_dependency):
 
 
 # download members
-@router.get("/members/download_member_data")
-async def download_member_data(db: db_dependency):
+@router.get("/members/download_member_data/{format}")
+async def download_member_data(db: db_dependency, format : str):
+
+    if format != "Excel" and format != "Docx":
+        raise HTTPException(status_code=400, detail="File format does not exist")
 
     member = await db.execute(select(Member).order_by(Member.id))
     member_data = member.scalars().all()
@@ -452,16 +455,27 @@ async def download_member_data(db: db_dependency):
                 else:
                     member_dict[key] = value
         member_dicts.append(member_dict)
-        print ("the data before the sheet ",member_dicts)
+        # print ("the data before the sheet ",member_dicts)
     # Check if member_data is empty
     if not member_data:
         raise HTTPException(status_code=200, detail="No user data exists")
 
-    # Generate Excel file
-    file_path = generate_excel(member_dicts, "member_data")
+    if format == "Excel":
+        # Generate Excel file
+        file_path = generate_excel(member_dicts, "member_data")
+        media_Type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        file_Name = "member_data.xlsx"
+
+    elif format == "Docx":
+        file_path = generate_excel(member_dicts, "member_data")
+        media_Type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        file_Name = "member_data.docs"
+
 
     # Return the file using FastAPI's FileResponse
-    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename="member_data.xlsx")
+    return FileResponse(file_path, media_type = media_Type, filename = file_Name)
+# {'title': '', 'firstName': 'Millicent', 'middleName': '', 'lastName': 'Ocloo', 'dateOfBirth': '', 'age': '', 'gender': 'Female', 'phoneNumber': '0592634014', 'email': '', 'nationality': '', 'homeTown': '', 'homeAddress': 'Kordiabe', 'workingStatus': '', 'occupation': '', 'qualification': '', 'institutionName': '', 'mothersName': '', 'fathersName': '', 'nextOfKin': '', 'nextOfKinPhoneNumber': '', 'maritalStatus': '', 'spouseContact': '', 'spouseName': '', 'numberOfChildren': '', 'memberType': '', 'cell': '', 'departmentName': '', 'dateJoined': '', 'classSelection': '', 'spiritualGift': '', 'position': '', 'waterBaptised': '', 'baptisedBy': '', 'dateBaptised': '', 'baptisedByTheHolySpirit': '', 'memberStatus': '', 'dateDeceased': '', 'dateBuried': '', 'confirmed': '', 'dateConfirmed': '', 'comment': ''}
+
 
 
 # sort member data
@@ -667,7 +681,7 @@ def to_camel_case(snake_str):
 
 from docx import Document
 import io
-@router.post("/upload-docx/")
+@router.post("/members/upload-docx")
 async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
     try:
         # Ensure the file is a .docx file
@@ -689,7 +703,14 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
         # Extract headers and rows from each table
         table_rows = []
         for table in tables:
-            rows = [[cell.text.strip() for cell in row.cells] for row in table.rows if any(cell.text.strip() for cell in row.cells)]
+            
+            rows = [
+                [cell.text.strip() for cell in row.cells]
+                for row in table.rows
+                if any(cell.text.strip() for cell in row.cells) and not row.cells[0].text.strip().lower().startswith("sp")
+            ]
+
+            print("rows : ",rows)
             
             header = rows[0][1:]
             print(header)
@@ -731,13 +752,19 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
             data = {to_camel_case(k): v for k, v in member_data.items() if k.strip()}
             print("hfjhfghj", data)
 
-            stmt = select(Member).where(
-                and_(
-                    Member.firstName == data['firstName'],
-                    Member.middleName == data['middleName'],
-                    Member.lastName == data['lastName']
-                )
-            )
+            conditions = []
+
+            if data.get('firstName'):
+                conditions.append(Member.firstName == data['firstName'])
+
+            if data.get('middleName'):
+                conditions.append(Member.middleName == data['middleName'])
+
+            if data.get('lastName'):
+                conditions.append(Member.lastName == data['lastName'])
+
+            stmt = select(Member).where(and_(*conditions))
+
             result = await db.execute(stmt)
             existing_member = result.scalar_one_or_none()
 
@@ -762,12 +789,37 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
             else:
 
                 data["memberID"] = generatedId(member_count)
+                print(data)
                 new_members = Member(**data)
                 new_members_list.append(new_members)
                 db.add(new_members)
                 await db.commit()
         
-        return {"message": "Members added successfully", "total_members": len(new_members_list),"skiped members": skiped_members_list} 
+        return {"message": "Members added successfully", "total_members": len(new_members_list),"skiped_members": skiped_members_list} 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+
+
+
+#clean data function
+
+
+# upload member sample document docx
+@router.get("/members/download_sample_upload_data_document")
+async def upload_docx():
+
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    file_path = BASE_DIR/"sampleDataFormat/members/Sample_Data_for_Adding_Members.docx"
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename="member_data_sample_document.docx")
+    
+
+@router.post("/members/test")
+async def download_docx():
+    file_path = generate_docx()
+
+    return FileResponse(file_path, media_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename = "test_data.docs")

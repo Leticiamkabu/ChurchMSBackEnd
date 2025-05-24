@@ -486,6 +486,7 @@ async def data_transfere(table_name: str):
     # DESTINATION_DB_URL = 'postgresql://dbmaster:U49531PObSfZ@10.0.30.15:5432/mysay'
 
     SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/churchMSLocal"
+    # DESTINATION_DB_URL = "postgresql://leticia:leeminho@localhost/churchMSProd"
     DESTINATION_DB_URL = "postgresql://ctc_dev_12gt_user:D47MC1Bq7TIgU4S6cQg41w5XFrXDoo2O@dpg-d0am3nur433s73da1uhg-a.oregon-postgres.render.com/ctc_dev_12gt"
 
     #postgresql://ctc_dev_12gt_user:D47MC1Bq7TIgU4S6cQg41w5XFrXDoo2O@dpg-d0am3nur433s73da1uhg-a.oregon-postgres.render.com/ctc_dev_12gt

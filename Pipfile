@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 fastapi = "*"
-uvicorn = "*"
 sqlalchemy = "*"
 python-dotenv = "*"
 psycopg2-binary = "*"
@@ -28,6 +27,7 @@ xlrd = "*"
 pandas = "*"
 python-magic = "*"
 python-docx = "*"
+uvicorn = "*"
 
 [dev-packages]
 

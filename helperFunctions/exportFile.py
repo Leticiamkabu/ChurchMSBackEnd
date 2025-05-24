@@ -4,8 +4,25 @@ from openpyxl import Workbook
 from io import BytesIO
 from typing import Any
 import os
+from docx import Document
+from openpyxl.styles import Font
+import re
 
-# @router.post("/generate-excel/")
+# import inflection
+
+# def prettify_key(text):
+#     return inflection.titleize(inflection.underscore(text))
+
+    
+def prettify_key(key):
+    # Insert space before each uppercase letter except if it's the first character
+    words = re.sub(r'(?<!^)(?=[A-Z])', ' ', key)
+    # Capitalize the first letter of each word
+    title_case = words.title()
+    return title_case
+
+
+
 def generate_excel(data: Any, filename : str):
     """
     Generate an Excel file from any data.
@@ -29,7 +46,15 @@ def generate_excel(data: Any, filename : str):
         if isinstance(data[0], dict):
             # List of dictionaries
             headers = list(data[0].keys())
-            ws.append(headers)
+            print ("headers :", headers)
+            pretty_headers = [prettify_key(key) for key in headers]
+            print ("p headers :", pretty_headers)
+
+            for col_num, header in enumerate(pretty_headers, start=1):
+                cell = ws.cell(row=1, column=col_num, value=header)
+                cell.font = Font(bold=True)
+
+
             for row in data:
                 ws.append(list(row.values()))
         else:
@@ -43,7 +68,8 @@ def generate_excel(data: Any, filename : str):
         print("am in the dict ")
         # Single dictionary
         headers = list(data.keys())
-        ws.append(headers)
+        pretty_headers = [prettify_key(key) for key in headers]
+        ws.append(pretty_headers)
         ws.append(list(data.values()))
 
     else:
@@ -82,3 +108,61 @@ def generate_excel(data: Any, filename : str):
     # )
 
     return save_path
+
+
+    # def generate_docx(data: Any, filename : str):
+    #     document = Document()
+
+    #     document.add_heading('CTC Member Data', level=1)
+    data = {
+        'title': '', 'firstName': 'Millicent', 'middleName': '', 'lastName': 'Ocloo', 'dateOfBirth': '',
+        'age': '', 'gender': 'Female', 'phoneNumber': '0592634014', 'email': '', 'nationality': '',
+        'homeTown': '', 'homeAddress': 'Kordiabe', 'workingStatus': '', 'occupation': '', 'qualification': '',
+        'institutionName': '', 'mothersName': '', 'fathersName': '', 'nextOfKin': '', 'nextOfKinPhoneNumber': '',
+        'maritalStatus': '', 'spouseContact': '', 'spouseName': '', 'numberOfChildren': '', 'memberType': '',
+        'cell': '', 'departmentName': '', 'dateJoined': '', 'classSelection': '', 'spiritualGift': '', 'position': '',
+        'waterBaptised': '', 'baptisedBy': '', 'dateBaptised': '', 'baptisedByTheHolySpirit': '', 'memberStatus': '',
+        'dateDeceased': '', 'dateBuried': '', 'confirmed': '', 'dateConfirmed': '', 'comment': ''
+    }
+
+# def prettify_key(key):
+#     return key.replace("_", " ").replace("-", " ").title().replace("Of", "of").replace("ByThe", "by the")
+
+def generate_docx():
+
+        data = {
+            'title': '', 'firstName': 'Millicent', 'middleName': '', 'lastName': 'Ocloo', 'dateOfBirth': '',
+            'age': '', 'gender': 'Female', 'phoneNumber': '0592634014', 'email': '', 'nationality': '',
+            'homeTown': '', 'homeAddress': 'Kordiabe', 'workingStatus': '', 'occupation': '', 'qualification': '',
+            'institutionName': '', 'mothersName': '', 'fathersName': '', 'nextOfKin': '', 'nextOfKinPhoneNumber': '',
+            'maritalStatus': '', 'spouseContact': '', 'spouseName': '', 'numberOfChildren': '', 'memberType': '',
+            'cell': '', 'departmentName': '', 'dateJoined': '', 'classSelection': '', 'spiritualGift': '', 'position': '',
+            'waterBaptised': '', 'baptisedBy': '', 'dateBaptised': '', 'baptisedByTheHolySpirit': '', 'memberStatus': '',
+            'dateDeceased': '', 'dateBuried': '', 'confirmed': '', 'dateConfirmed': '', 'comment': ''
+        }
+
+
+        # Create a new Word document
+        doc = Document()
+        doc.add_heading('Member Information Form', level=1)
+
+        # Add each field in its own row in a 2-column table
+        table = doc.add_table(rows=0, cols=2)
+        table.style = 'Table Grid'
+
+        number = 1
+        for key, value in data.items():
+            row = table.add_row().cells
+            row[0].text = f"{number}. {prettify_key(key)}"
+            row[1].text = value if value else "-"
+            number += 1
+
+        # Save the document
+        upload_folder_path = os.path.join(os.path.dirname(__file__), 'reports')
+        print("file location : ",upload_folder_path ) 
+        saved_path = os.path.join(upload_folder_path, "Formatted_test_Info.docx")
+        doc.save(saved_path)
+        print("saved path : ", saved_path)
+        print("Formatted document saved as 'Formatted_test_Info.docx'")
+
+        return saved_path
