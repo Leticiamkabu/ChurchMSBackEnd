@@ -20,6 +20,7 @@ class FirstTimers(Base):
     counselor = Column(String, nullable=False)
     date = Column(String, nullable=False)
     status = Column(String, nullable=False)
+    ftClass = Column(String, nullable=False)
     createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
     updatedOn = Column(DateTime, nullable=True,

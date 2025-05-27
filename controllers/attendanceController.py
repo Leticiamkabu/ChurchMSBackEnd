@@ -574,8 +574,8 @@ async def download_attendance_report(db: db_dependency, specifiedDate: str, stat
 
 
 # download attendance for a particular day
-@router.get("/attendance/report_fetch/{specifiedDate}/{status}")
-async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status: str):
+@router.get("/attendance/report_fetch/{specifiedDate}/{status}/{department}")
+async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status: str, department : str):
 
     attendance = await db.execute(select(Attendance))
     attendance_data = attendance.scalars().all()
@@ -592,16 +592,27 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
         print("Invalid date format. Please use 'YYYY-MM-DD'.")
         
     
-    if specified_date_obj > date.today() or str(specified_date_obj) not in [record.date for record in attendance_data]:
-        raise HTTPException(status_code=200, detail="No attendance data exists with date specified")
+    if specified_date_obj > date.today():
+        raise HTTPException(status_code=200, detail="Date not reached")
+
+    # if specified_date_obj > date.today() or str(specified_date_obj) not in [record.date for record in attendance_data]:
+    #     raise HTTPException(status_code=200, detail="No attendance data exists with date specified")
     
-    print(status)
-    if status == "All":
+    print(status) 
+    queryed_Members = []
+    if status == "ALL" or status == "ABSCENT":
+        result = await db.execute(select(Member))
+        all_members = result.scalars().all()
+        for i in all_members:
+
+            queryed_Members.append(i)
         pass
 
-    elif status not in [record.status for record in attendance_data]:
+    elif status == "PRESENT" and status not in [record.status for record in attendance_data]:
         raise HTTPException(status_code=200, detail="No attendance data exists with status specified")
     
+    print("qyeried memer: ",len(queryed_Members))
+
 
     # Collect optional filters
     filters = []
@@ -611,13 +622,88 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
         filters.append(Attendance.date == str(specified_date_obj))
     
 
-    if status and status != "All":  # If a specific status is provided
+    if status and status == "PRESENT": 
+        print("it came here in staus:")
+         # If a specific status is provided
         filters.append(Attendance.status == status)
 
 
+    filtered_attendance_data = []
     attendance = await db.execute(select(Attendance).where(and_(*filters)))
     attendance_data = attendance.scalars().all()
-    ordered_attendance_data = [AttendanceResponse.from_orm(attendance) for attendance in attendance_data]  
+
+    print("ddddddddd: ",attendance_data)
+    for attendance_member in attendance_data:
+        print("stdfg : ", uuid.UUID(str(attendance_member.memberID)))
+        member_data = await db.get(Member, uuid.UUID(str(attendance_member.memberID)))
+        # member_data = attendance.scalar_one_or_none()
+
+        print("id id :" , member_data.memberID)
+        attendance_member.memberID = member_data.memberID
+        attendance_member.department = member_data.departmentName
+        attendance_member.timeStamp = attendance_member.createdOn
+        filtered_attendance_data.append(attendance_member)
+
+    
+    if department != "Not Added" and attendance_data != [] :
+        processed_data = []
+        for attendance in filtered_attendance_data:
+            print("qaws :", attendance.department)
+            if attendance.department == department:
+                processed_data.append(attendance)
+                # print("yes")
+                # raise HTTPException(status_code=200, detail="No attendance data exists with department specified")
+
+        filtered_attendance_data = []
+        for i in processed_data:
+
+            filtered_attendance_data.append(i)
+
+        if filtered_attendance_data == []:
+            print("yes")
+            raise HTTPException(status_code=200, detail="No attendance data exists with department specified")
+
+    elif department != "Not Added":
+        queryed_Members = []
+        result = await db.execute(select(Member).where(Member.departmentName == department))
+        all_members = result.scalars().all()
+        for i in all_members:
+
+            queryed_Members.append(i)
+
+
+    
+
+
+    if status == "ABSCENT" or status == "ALL":
+        print(" etret : ",filtered_attendance_data)
+        # Create a set of memberIDs to remove
+        member_ids_to_remove = {i.memberID for i in filtered_attendance_data}
+        print("checking: ",len(member_ids_to_remove))
+        print("qyeried memer: ",len(queryed_Members))
+        # Filter the members
+        remaining_members = [member for member in queryed_Members if id not in member_ids_to_remove]
+
+        if status == "ABSCENT":
+
+            filtered_attendance_data = []
+
+        print("checking something 1: ",len(filtered_attendance_data))
+        for i in remaining_members:
+            d = {
+            "id": None,
+            "memberID": i.memberID,
+            "fullName": f"{i.firstName} {i.middleName} {i.lastName}",
+            "status": "ABSCENT",
+            "department": i.departmentName,
+            "markedBy": "NOT_SET",
+            "timeStamp": "NOT_MARKED"
+        }
+        
+
+            filtered_attendance_data.append(d)
+        print("checking something: ",len(filtered_attendance_data))
+    ordered_attendance_data = [AttendanceResponse.from_orm(attendances) for attendances in filtered_attendance_data]  
 
     attendance_dicts = []
     for attendance in ordered_attendance_data:
@@ -630,10 +716,10 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
                 else:
                     attendance_dict[key] = value
         attendance_dicts.append(attendance_dict)
-        print ("the data before the sheet ",attendance_dicts)
+        # print ("the data before the sheet ",attendance_dicts)
     # Check if member_data is empty
-    if not attendance_data:
-        raise HTTPException(status_code=200, detail="No user data exists")
+    if filtered_attendance_data == []:
+        raise HTTPException(status_code=200, detail="No attendance data exists")
 
    
     return attendance_dicts

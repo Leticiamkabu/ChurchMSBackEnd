@@ -2,6 +2,7 @@
 from fastapi import Form, Depends
 from pydantic import BaseModel
 import uuid
+from typing import Optional
 
 
 class AttendanceSchema(BaseModel):
@@ -17,8 +18,9 @@ class AttendanceResponseSchema(BaseModel):
     memberID: str
     fullName: str
     status: str
-    serviceType: str
+    department: Optional[str]
     markedBy: str
+    timeStamp : str
     
 
     class Config:
@@ -26,4 +28,5 @@ class AttendanceResponseSchema(BaseModel):
 
     
 class AttendanceResponse(AttendanceResponseSchema):
+    id : Optional[uuid.UUID]
     pass  # You can add any extra fields or modifications if needed

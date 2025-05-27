@@ -12,6 +12,8 @@ from fastapi.responses import FileResponse
 
 
 from models.firstTimersModel import *
+from models.membersModel import *
+
 # from models.profileModel import *
 # from models.itemsModel import *
 from schemas.firstTimersSchema import *
@@ -72,6 +74,7 @@ router = APIRouter()
 
 purpose_of_coming = ["VISIT", "MEMBERSHIP", "REDEDICATION" ]
 first_timer_status = ["VISITOR", "MEMBER"]
+first_timer_class = ["NEW CONVERT", "NEW MEMBERS", "DISCIPLESHIP", "BAPTISM"],
 special_prayer_or_counseling = ["BUSINESS", "HEALTH", "DELIVERANCE", "MARITAL", "EDUCATIONAL", "OTHERS", "" ]
 
 
@@ -108,14 +111,15 @@ async def create_first_timers(db: db_dependency, request: FirstTimersSchema):
                 counselor = request.counselor,
                 date = request.date,
                 status = "VISITOR",
+                ftClass = "NEW MEMBERS",
                 createdOn = datetime.today()
                 
 
             )
     
 
-    # db.add(first_timers_data)
-    # await db.commit()
+    db.add(first_timers_data)
+    await db.commit()
 
     
 
@@ -201,30 +205,70 @@ async def update_first_timer( id: str ,db: db_dependency, request: FirstTimersSc
     if first_timer_data  is None:
         raise HTTPException(status_code=404, detail="First Timer with id does not exist", data = first_timer_data)
 
-    converted_first_timer_data = first_timer_data.__dict__
-    converted_first_timer_data["updatedOn"] = datetime.today()
-    inputs = request.__dict__
+    # Handle promotion to MEMBER
+    if request.status == "MEMBER":
+        full_name = request.name.strip()
+        name_parts = full_name.split()
 
+        first_name = name_parts[0] if len(name_parts) > 0 else ''
+        last_name = name_parts[-1] if len(name_parts) > 1 else ''
+        middle_name = ' '.join(name_parts[1:-1]) if len(name_parts) > 2 else ''
 
-    # Only update fields that are present in both user data and input
+        result = await db.execute(select(func.count(Member.id)))
+        count = result.scalar()
+        member_data = Member(
+            memberID=generatedId(count),
+            firstName=first_name,
+            middleName=middle_name,
+            lastName=last_name,
+            phoneNumber=request.phoneNumber,
+            homeAddress=request.houseLocation,
+            memberType="MEMBER",
+            dateJoined=str(datetime.today()),
+            memberStatus="ALIVE",
+        )
+
+        db.add(member_data)
+        await db.commit()
+
+        result = await db.execute(
+        select(Member).where(Member.memberID == member_data.memberID)
+        )
+        new_member_data = result.scalar() 
+
+        if new_member_data:
+            await db.delete(first_timer_data)
+            await db.commit()
+        return {
+        "message": "First Timer is now a member",
+        "First Timer": first_timer_data
+    }
+    
+
+    # Update regular first timer fields
+    inputs = request.dict(exclude_unset=True)
+
+    # Always update updatedOn field
+    first_timer_data.updatedOn = datetime.today()
+
+    # Optional: Update ftClass if present
+    if "ftClass" in inputs:
+        first_timer_data.ftClass = inputs["ftClass"]
+
+    # Update all other fields safely
     for key, value in inputs.items():
-        if key in converted_first_timer_data and value is not None: 
-            # print("key : ", key)
-            # print("value :", value) # Avoid updating with `None` values
+        if hasattr(first_timer_data, key) and value is not None:
             setattr(first_timer_data, key, value)
-    
-    logger.info("First timer data ready for storage for first_timer_id: %s", id)
-    
-   
-    await db.commit()
-    
-    
 
-    
+    await db.commit()
+    await db.refresh(first_timer_data)
+
     logger.info("First timer data updated successfully for first_timer_id: %s", id)
-    
-    return {"message": "First timer details update successful", "First Timer": first_timer_data}
-    
+
+    return {
+        "message": "First timer details update successful",
+        "First Timer": first_timer_data
+    }
     
 
 
@@ -238,7 +282,7 @@ async def delete_first_timers_by_id(id: uuid.UUID, db: db_dependency):
         raise HTTPException(status_code=404, detail="First_timer not found")
 
     # Delete the user
-    await db.delete(attendance)
+    await db.delete(first_timer)
     await db.commit()
 
 
@@ -422,3 +466,7 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
 
+def generatedId(lastNumber):
+    id_constant = 'CTC_M_00'
+    id_number = lastNumber + 1
+    return id_constant + str(id_number)
