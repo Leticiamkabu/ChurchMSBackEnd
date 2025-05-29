@@ -2,6 +2,7 @@
 from fastapi import Form, Depends
 from pydantic import BaseModel
 import uuid
+from typing import List
 
 class MemberSchema(BaseModel):
     title : str
@@ -55,3 +56,10 @@ class MemberSchema(BaseModel):
 
 class MemberResponse(MemberSchema):
     pass  # You can add any extra fields or modifications if needed
+
+
+
+class Report(BaseModel):
+    reportList: List[str]
+
+    

@@ -13,6 +13,7 @@ import base64
 
 
 
+
 from models.membersModel import *
 # from models.profileModel import *
 # from models.itemsModel import *
@@ -36,7 +37,7 @@ import string
 from helperFunctions.exportFile import *
 
 # file upload
-from fastapi import UploadFile,status, File, Form
+from fastapi import UploadFile,status, File, Form, Request
 # from utils.minio_util import upload_file
 
 import re
@@ -495,8 +496,10 @@ async def sort_member_data(db: db_dependency, age: str, ageRange: str, departmen
         ranges = list(map(int, ageRange.split(",")))
         filters.append(and_(Member.age >= str(ranges[0]), Member.age <= str(ranges[1])))
     if birthMonth != "bm":
+        print("brith month : ", birthMonth)
         # "07"  # If a specific status is provided
-        filters.append(func.substr(Member.dateOfBirth, 6, 2) == birthMonth)
+        # YYYY-MM-DD format
+        filters.append(func.substr(Member.dateOfBirth, 4, 2) == birthMonth)
 
     member = await db.execute(select(Member).where(and_(*filters))) 
     member_data = member.scalars().all()
@@ -569,9 +572,11 @@ async def get_member_image(db: db_dependency, fullname : str):
 
 
 def generatedId(lastNumber):
-    id_constant = 'CTC_M_00'
-    id_number = lastNumber + 1
-    return id_constant + str(id_number)
+    prefix = "CTCAG"
+    padded_number = str(lastNumber).zfill(4)  # pads to 4 digits like 0001
+    year_suffix = str(datetime.now().year)[-2:]  # gets last 2 digits of current year
+    return f"{prefix}_{padded_number}_{year_suffix}"
+    
 
 
 
@@ -823,3 +828,35 @@ async def download_docx():
     file_path = generate_docx()
 
     return FileResponse(file_path, media_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename = "test_data.docs")
+
+
+@router.post("/members/download_report_data")
+async def download_member_data(report : Request):
+
+    payload = await report.json()
+    report_list: List[dict] = payload.get("reportList", [])
+    print(report_list)
+
+    # Generate Excel file
+    file_path = generate_excel(report_list, "Report_data")
+    media_Type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    file_Name = "member_data.xlsx"
+
+    # Return the file using FastAPI's FileResponse
+    return FileResponse(file_path, media_type = media_Type, filename = file_Name)
+
+
+
+
+# Query
+
+# WITH numbered AS (
+#   SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
+#   FROM members
+#   WHERE email IS NULL OR email = ''
+# )
+# UPDATE members
+# SET "memberID" = 
+#   'CTCAG_' || LPAD(rn::text, 4, '0') || '_' || TO_CHAR(CURRENT_DATE, 'YY')
+# FROM numbered
+# WHERE members.id = numbered.id;

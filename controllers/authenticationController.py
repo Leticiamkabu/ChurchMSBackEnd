@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import uuid
 import os
 
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import select, or_, func, create_engine, MetaData, Table
 import requests
 from passlib.context import CryptContext
@@ -69,8 +69,8 @@ db_dependency = Annotated[Session, Depends(get_db)]
 router = APIRouter()
 
 
-Role = ["DATA CLERK", "ACCOUNTS", "ADMINISTRATOR" , "DEPARTMENTAL LEADERS" , "ADMIN"]
-Privilege = ["Add members", "Create Users", "Get User Details" , "Take Attendance", "Get Attendance Overview", "Generate Report","Get Member Details" ,"Everything"]
+Role = ["DATA CLERK", "ACCOUNTS", "ADMINISTRATOR" , "DEPARTMENTAL LEADERS" , "ADMIN", "GUEST"]
+Privilege = ['ADMIN PRIVILEGES', 'DATA CLERK PRIVILEGES', 'ADMINISTRATOR PRIVILEGES', 'GUEST PRIVILEGES']
 
 # create user
 @router.post("/auth/create_user")  # done connecting
@@ -93,17 +93,12 @@ async def create_user(db: db_dependency, user: CreateUserSchema):
         print(type(user.role))
         return "Role provided does not exist"
 
-    
+    if user.privileges not in Privilege:
+        print(type(user.role))
+        return "Privileges provided does not exist"
 
-    for i in user.privileges:
-        if i not in Privilege:
-            print(i)
-            return "Privileges provided does not exist"
-
-    string_privileges = ','.join(user.privileges)
-    
         
-    print("pr ",string_privileges)
+    
     user_data = User(
                 email=user.email,
                 firstName=user.firstName,
@@ -111,7 +106,7 @@ async def create_user(db: db_dependency, user: CreateUserSchema):
                 phoneNumber=user.phoneNumber,
                 password =hashed_password.decode('utf-8'),
                 role = user.role,
-                privileges = string_privileges,
+                privileges = user.privileges,
 
             )
     
@@ -178,7 +173,7 @@ async def login( db: db_dependency, user: LoginSchema):
     
     # Check if the user was found
     if not user_data:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=401, detail="Invalid Credential")
     
     logger.info("User data queried successfully")
 
@@ -420,13 +415,15 @@ async def update_user(db: db_dependency,user_id: str, user_input: CreateUserSche
         raise HTTPException(status_code=404, detail="User not found")
     
     logger.info("User data queried successfully for user_id: %s", user_id)
+
+    if user_data.password != user_input.password:
+        hashed_password = bcrypt.hashpw(user_input.password.encode('utf-8'), bcrypt.gensalt())
+        user_input.password = hashed_password.decode('utf-8')
     
-    hashed_password = bcrypt.hashpw(user_input.password.encode('utf-8'), bcrypt.gensalt())
+    
     # Convert user data and input into dictionaries
     converted_user_data = user_data.__dict__
     user_data.updated = datetime.today()
-    user_input.privileges = ','.join(user_input.privileges)
-    user_input.password = hashed_password.decode('utf-8')
     inputs = user_input.__dict__
 
 
@@ -540,3 +537,86 @@ async def data_transfere(table_name: str):
 
     print("Data transfer complete.")
     return "Data transfer complete."
+
+
+
+
+
+
+    # Tracking user activities
+
+    # ACTIVE
+
+# create member
+@router.post("/auth/user_tracking")  # done connecting
+async def create_user_traker(db: db_dependency, loginTrack: UserLoginTrackerSchema):
+
+    user_data = await db.get(User, uuid.UUID(loginTrack.userId))
+
+    if user_data  is None:
+        raise HTTPException(status_code=200, detail="User with id does not exist", data = user_tracker_data)
+    
+
+    result = await db.execute(
+        select(UserLoginTracker).where(UserLoginTracker.userId == loginTrack.userId, UserLoginTracker.logOutTime == "NOT_SET")
+    )
+    user_tracker_data = result.scalars().all() 
+
+    if user_tracker_data :
+        raise HTTPException(status_code=200, detail="User with id is already logged in")
+    
+
+
+    user_track = UserLoginTracker(
+        firstName = user_data.firstName,
+        lastName= user_data.lastName,
+        status= loginTrack.status,
+        role= user_data.role,
+        logInTime=loginTrack.logInTime,
+        logOutTime="NOT_SET",
+        userId=loginTrack.userId,
+        date=str(date.today()),
+        createdOn=datetime.today(),
+    )
+
+    db.add(user_track)
+    await db.commit()
+
+    logger.info("User activitity tracking successful.")
+    return {"message": "User activitity tracking successful", "User tracking data": user_track}
+    
+
+@router.get("/auth/get_all_user_tracking")  # done connecting
+async def get_user_traker(db: db_dependency):
+
+    result = await db.execute(
+        select(UserLoginTracker).where(UserLoginTracker.date == str(date.today()))
+    )
+    user_tracker_data = result.scalars().all() 
+
+    if user_tracker_data  is None:
+        raise HTTPException(status_code=200, detail="User tracker data not found", data = user_tracker_data)
+    print(user_tracker_data)
+    return user_tracker_data
+
+
+@router.patch("/auth/update_user_tracking/{user_id}/{logOutTime}")  # done connecting
+async def update_user_traker(db: db_dependency, user_id : str, logOutTime : str):
+
+    result = await db.execute(
+        select(UserLoginTracker).where(UserLoginTracker.userId == user_id, UserLoginTracker.logOutTime == "NOT_SET")
+    )
+    user_tracker_data = result.scalars().all() 
+
+    if user_tracker_data  is None:
+        raise HTTPException(status_code=200, detail="User tracker with empty updated date does not exist", data = user_tracker_data)
+
+    for tracker in user_tracker_data:
+        tracker.logOutTime = logOutTime
+        tracker.status = "INACTIVE"
+        tracker.updatedOn = str(datetime.today())
+
+    await db.commit()
+    
+    logger.info("User activitity tracking updated successfully.")
+    return {"message": "User activitity tracking updated successfully", "User tracking data": user_tracker_data}

@@ -10,9 +10,15 @@ class CreateUserSchema(BaseModel):
     phoneNumber: str
     password: str
     role: str
-    privileges: list[str]
+    privileges: str
 
 class LoginSchema(BaseModel):
     email: str
     password: str
+
+
+class UserLoginTrackerSchema(BaseModel):
+    status: str
+    logInTime: str
+    userId: str
     
