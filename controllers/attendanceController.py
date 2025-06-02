@@ -804,3 +804,33 @@ async def process_csv(file: UploadFile):
     "updatedOn": "2025-05-16 13:04:13.17942+00"
   }
 ]
+
+
+# QUERY TO REMOVE NULL FROM TABLE USING ID
+
+
+# DO $$
+# DECLARE
+#     set_clause TEXT;
+#     update_query TEXT;
+# BEGIN
+#     SELECT string_agg(
+#         format('%I = COALESCE(%I, '''')', column_name, column_name), ', '
+#     )
+#     INTO set_clause
+#     FROM information_schema.columns
+#     WHERE table_name = 'members'  -- <- change to your table name
+#       AND table_schema = 'public' -- <- adjust if you're using a different schema
+#       AND data_type IN ('character varying', 'text', 'char');
+
+#     IF set_clause IS NULL THEN
+#         RAISE NOTICE 'No text columns found to update.';
+#     ELSE
+#         update_query := format(
+#             'UPDATE members SET %s WHERE id = %L',
+#             set_clause,
+#             '8b6a26c4-1f38-4537-a946-6e3e30055b14'  -- <- put your actual ID here (quoted since it's a string UUID)
+#         );
+#         EXECUTE update_query;
+#     END IF;
+# END $$;

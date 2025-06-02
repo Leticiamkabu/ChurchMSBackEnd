@@ -556,7 +556,7 @@ async def get_member_image(db: db_dependency, fullname : str):
 
     logger.info("Endpoint : update_member_image")
 
-    memberImageData = await db.execute(select(MemberImage).where(MemberImage.fullname == fullname))
+    memberImageData = await db.execute(select(MemberImage).where(MemberImage.fullName == fullname))
     memberImageData_data = memberImageData.scalar()
 
     print("sdfghj", memberImageData_data)

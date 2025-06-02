@@ -1,7 +1,7 @@
 
 from fastapi import Form, Depends
 from pydantic import BaseModel
-import uuid
+from uuid import UUID
 from typing import List
 
 class MemberSchema(BaseModel):
@@ -55,7 +55,8 @@ class MemberSchema(BaseModel):
 
 
 class MemberResponse(MemberSchema):
-    pass  # You can add any extra fields or modifications if needed
+    id : UUID
+    
 
 
 
