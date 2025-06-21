@@ -370,6 +370,11 @@ async def download_first_timers_data(db: db_dependency, format : str):
     # Return the file using FastAPI's FileResponse
     return FileResponse(file_path, media_type = media_Type, filename = file_Name)
 
+def to_camel_case(snake_str):
+    """Convert snake_case or other formats to camelCase"""
+    components = re.split(r'[_\s]+', snake_str)  # Split by underscores or spaces
+    return components[0].lower() + ''.join(x.capitalize() for x in components[1:])
+
 
 from docx import Document
 import io
@@ -451,6 +456,7 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
 
 
             if existing_first_timers:
+                print("yessssssss")
                 skiped_first_timers_list.append(data['name'])
                 pass
                 

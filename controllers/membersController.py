@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 import bcrypt
 import random
 import base64
+from helperFunctions import clean_database
 
 
 
@@ -685,6 +686,8 @@ def to_camel_case(snake_str):
 
 
 from docx import Document
+from docx import Document
+from docx import Document
 import io
 @router.post("/members/upload-docx")
 async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
@@ -762,8 +765,8 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
             if data.get('firstName'):
                 conditions.append(Member.firstName == data['firstName'])
 
-            if data.get('middleName'):
-                conditions.append(Member.middleName == data['middleName'])
+            # if data.get('middleName'):
+            #     conditions.append(Member.middleName == data['middleName'])
 
             if data.get('lastName'):
                 conditions.append(Member.lastName == data['lastName'])
@@ -772,33 +775,38 @@ async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
 
             result = await db.execute(stmt)
             existing_member = result.scalar_one_or_none()
+            # print("member exists :" + existing_member) 
 
 
             if existing_member:
                 print("member exists")
-                current_dept = existing_member.departmentName or ""
-                new_dept = data['departmentName']
+
+                skiped_members_list.append(data['firstName'] + " " + data['lastName'])
+                # current_dept = existing_member.departmentName or ""
+                # new_dept = data['departmentName']
     
-                if new_dept not in current_dept:
-                    updated_dept = f"{current_dept}, {new_dept}" if current_dept else new_dept
-                    await db.execute(
-                        update(Member)
-                        .where(Member.id == existing_member.id)
-                        .values(departmentName=updated_dept)
-                    )
-                else:
-                    skiped_members_list.append(data['firstName'] + data['middleName'] + data['lastName'])
-                    pass
-                    # raise HTTPException(status_code=500, detail="User and department name already exist")
+                # if new_dept not in current_dept:
+                #     updated_dept = f"{current_dept}, {new_dept}" if current_dept else new_dept
+                #     await db.execute(
+                #         update(Member)
+                #         .where(Member.id == existing_member.id)
+                #         .values(departmentName=updated_dept)
+                #     )
+                # else:
+                #     skiped_members_list.append(data['firstName'] + data['middleName'] + data['lastName'])
+                #     pass
+                #     # raise HTTPException(status_code=500, detail="User and department name already exist")
 
             else:
-
+                print("yes")
                 data["memberID"] = generatedId(member_count)
                 print(data)
                 new_members = Member(**data)
                 new_members_list.append(new_members)
-                db.add(new_members)
-                await db.commit()
+                # db.add(new_members)
+                # await db.commit()
+
+
         
         return {"message": "Members added successfully", "total_members": len(new_members_list),"skiped_members": skiped_members_list} 
 
@@ -846,7 +854,9 @@ async def download_member_data(report : Request):
     return FileResponse(file_path, media_type = media_Type, filename = file_Name)
 
 
-
+@router.post("/members/clean")
+async def downlo(report : Request):
+    replace_nulls_with_empty_string()
 
 # Query
 
