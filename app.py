@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
-from controllers import authenticationController, membersController, attendanceController, notificationController, firstTimersController
+from controllers import authenticationController, membersController, attendanceController, notificationController, firstTimersController, helperFunctionController
 from fastapi_login import LoginManager
 
 
@@ -63,4 +63,5 @@ app.include_router(membersController.router, tags=["Members"]),
 app.include_router(attendanceController.router, tags=["Attendance"]),
 app.include_router(notificationController.router, tags=["Notification"]),
 app.include_router(firstTimersController.router, tags=["FirstTimers"])
+app.include_router(helperFunctionController.router, tags=["HelperEndpoint"])
 

@@ -33,4 +33,3 @@ class ScheduledMessages(Base):
     updatedOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
 
-

@@ -88,7 +88,7 @@ async def create_member(db: db_dependency, member: MemberSchema):
     if member.dateOfBirth != "":
         age = int(date.today().strftime("%Y")) - int(member.dateOfBirth[0:4])
     else:
-        age = member.age
+        age = ""
 
     member_data = Member(
                 memberID = generatedId(count),
