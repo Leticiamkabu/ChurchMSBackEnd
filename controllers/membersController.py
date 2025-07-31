@@ -686,8 +686,6 @@ def to_camel_case(snake_str):
 
 
 from docx import Document
-from docx import Document
-from docx import Document
 import io
 @router.post("/members/upload-docx")
 async def upload_docx(db: db_dependency , file: UploadFile = File(...)):
@@ -853,20 +851,3 @@ async def download_member_data(report : Request):
     # Return the file using FastAPI's FileResponse
     return FileResponse(file_path, media_type = media_Type, filename = file_Name)
 
-
-@router.post("/members/clean")
-async def downlo(report : Request):
-    replace_nulls_with_empty_string()
-
-# Query
-
-# WITH numbered AS (
-#   SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn
-#   FROM members
-#   WHERE email IS NULL OR email = ''
-# )
-# UPDATE members
-# SET "memberID" = 
-#   'CTCAG_' || LPAD(rn::text, 4, '0') || '_' || TO_CHAR(CURRENT_DATE, 'YY')
-# FROM numbered
-# WHERE members.id = numbered.id;
