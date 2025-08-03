@@ -172,10 +172,14 @@ async def send_bulk_sms_notification(db: db_dependency, request: BulkSMSRequestS
 #     return {"message": "Message stored and sorted by scheduled time"}
 
 
-@router.post("/notification/store-message")
-async def store_message(db: db_dependency, scheduledMessage: ScheduledSMSMessageRequestSchema):
+@router.post("/notification/store_scheduled_messages")
+async def store_scheduled_messages(db: db_dependency, scheduledMessage: ScheduledSMSMessageRequestSchema):
     
     logger.info(" About to store scheduled messages ")
+
+    if scheduledMessage.notificationType not in notification_type:
+        print(request.notificationType)
+        return "Notification type provided does not exist"
 
     newScheduledMessage = ScheduledMessages(
         notificationType = scheduledMessage.notificationType,
@@ -183,6 +187,7 @@ async def store_message(db: db_dependency, scheduledMessage: ScheduledSMSMessage
         message = scheduledMessage.message,
         sendTime = scheduledMessage.scheduledTime,
         messageStatus = "PENDING",
+        senderId = scheduledMessage.sender,
         createdOn = datetime.today()
 
     )
@@ -194,10 +199,69 @@ async def store_message(db: db_dependency, scheduledMessage: ScheduledSMSMessage
     return {"message": "Message stored in db"}
 
 
-
 @router.post("/notification/send/scheduled_sms_message")
-async def send_scheduled_sms_message_notification(db: db_dependency, request: ScheduledSMSMessageRequestSchema):
+async def send_scheduled_sms_message_notification(request: SendScheduledSMSRequestSchema):
 
+    logger.info(" About to send available scheduled messages ")
+
+    logger.info(" Gettingsender phone number for alert ")
+    result = await db.execute(
+                select(User).where(str(User.id) == request.senderId)
+            )
+    scheduled_message_user = result.scalar()
+
+    try:
+
+    # Send
+        response = "Sent"
+        recipients_str = ",".join(request.recipient)
+        print(recipients_str)
+        print("number" ,recipients_str)
+        print("message" ,request.message)
+        
+        # 233552285103
+        sms_response = await send_sms(recipients_str, request.message)
+
+
+        if sms_response.get("status") != 'success':
+
+            response = "Not Sent"
+
+            logger.info(f"SMS scheduled Message not sent, error: {sms_response.get('message')}")
+        
+
+        # save message status
+        result = await db.execute(
+                select(ScheduledMessages).where(str(ScheduledMessages.id) == request.id)
+            )
+        scheduled_message_data = result.scalar() 
+        scheduled_message_data.messageStatus = response
+
+        db.add(scheduled_message_data) 
+        await db.commit()
+
+        # send notification to message sender of the sending response
+        sms_response = await send_sms(scheduled_message_user.phoneNumber, f"Your scheduled message has a status of {response}")
+
+        logger.info("SMS Message sent Sucessfully")
+        return {"message": "SMS Message processed Sucessfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# get the message 
+
+# save it in the dm
+
+# check the database evry day to see if there re available smessages to be sent
+
+# if there are , we get the list of messages and start to shedule message sent at that time
+
+# the after a meaase is sent the list is cheked and the next near time and its message are taken
+
+# when  message is sent the status changes to messae sent depending on the response
+
+# if the message is not sent or sent an sms is sent to the message creator of the status
     if request.notificationType not in notification_type:
         print(request.notificationType)
         return "Notification type provided does not exist"
@@ -243,3 +307,37 @@ async def send_scheduled_sms_message_notification(db: db_dependency, request: Sc
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.post("/notification/check_scheduled_sms_message")
+# every 6 am
+async def check_scheduled_sms_message():
+
+    logger.info("Endpoint : checking for scheduled messages")
+    # 2025-07-18 10:00:00
+    # '2025-07-29'
+    result = await db.execute(
+        select(ScheduledMessages).where(func.date(ScheduledMessages.sendTime) == str(date.today()))
+    )
+    scheduled_message_data = result.scalar() 
+
+    if scheduled_message_data == None:
+        return "No messages found for today"
+
+# create a new cron jobs with the messages
+    # for i in scheduled_message_data:
+
+    # request = SendScheduledSMSRequestSchema(
+    #     recipient = list(scheduled_message_data.recipient),
+    #     message = scheduled_message_data.message,
+    #     senderId =scheduled_message_data.senderId
+    # )
+
+    # schedule message
+    # scheuled_message_response = send_scheduled_sms_message_notification(request)
+ 
+    # scheuled_message_response.status_code == 200:
+
+
+    return scheduled_message_data

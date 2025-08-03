@@ -26,7 +26,13 @@ class BulkSMSRequestSchema(BaseModel):
 
 
 class ScheduledSMSMessageRequestSchema(BaseModel):
+    senderId : str
     recipient: List[str] # phone number
     message: str
     notificationType: str
     scheduledTime: str
+
+class SendScheduledSMSRequestSchema(BaseModel):
+    recipient: List[str] # phone number
+    message: str
+    senderId: str
