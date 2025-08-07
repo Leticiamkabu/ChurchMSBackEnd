@@ -200,7 +200,7 @@ async def store_scheduled_messages(db: db_dependency, scheduledMessage: Schedule
 
 
 @router.post("/notification/send/scheduled_sms_message")
-async def send_scheduled_sms_message_notification(request: SendScheduledSMSRequestSchema):
+async def send_scheduled_sms_message_notification(request: SendScheduledSMSRequestSchema, sendTime: str):
 
     logger.info(" About to send available scheduled messages ")
 
@@ -318,7 +318,10 @@ async def check_scheduled_sms_message():
     # 2025-07-18 10:00:00
     # '2025-07-29'
     result = await db.execute(
-        select(ScheduledMessages).where(func.date(ScheduledMessages.sendTime) == str(date.today()))
+        select(ScheduledMessages).where(
+            func.date(ScheduledMessages.sendTime) == str(date.today()),
+            ScheduledMessages.status == "Not sent")
+            .order_by(desc(ScheduledMessages.sendTime))
     )
     scheduled_message_data = result.scalar() 
 
@@ -328,14 +331,15 @@ async def check_scheduled_sms_message():
 # create a new cron jobs with the messages
     # for i in scheduled_message_data:
 
-    # request = SendScheduledSMSRequestSchema(
-    #     recipient = list(scheduled_message_data.recipient),
-    #     message = scheduled_message_data.message,
-    #     senderId =scheduled_message_data.senderId
-    # )
+    request = SendScheduledSMSRequestSchema(
+        recipient = list(scheduled_message_data[0].recipient),
+        message = scheduled_message_data[0].message,
+        senderId =scheduled_message_data[0].senderId
+    )
 
+    sendTime =scheduled_message_data[0].senderTime[11,18]
     # schedule message
-    # scheuled_message_response = send_scheduled_sms_message_notification(request)
+    scheuled_message_response = send_scheduled_sms_message_notification(request, sendTime)
  
     # scheuled_message_response.status_code == 200:
 
