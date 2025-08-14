@@ -188,7 +188,7 @@ async def get_attendance_for_the_current_day( db: db_dependency):
 
     
     result = await db.execute(
-        select(func.count()).select_from(Attendance).where(Attendance.date == str(date.today()))
+        select(func.count()).select_from(Attendance).where(Attendance.date == str(date.today()), Attendance.status == "PRESENT")
     )
     total_attendance = result.scalar() 
     
