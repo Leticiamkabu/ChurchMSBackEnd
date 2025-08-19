@@ -600,7 +600,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
     
     print(status) 
     queryed_Members = []
-    if status == "ALL" or status == "ABSCENT":
+    if status == "ALL" or status == "ABSENT":
         result = await db.execute(select(Member))
         all_members = result.scalars().all()
         for i in all_members:
@@ -675,7 +675,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
     
 
 
-    if status == "ABSCENT" or status == "ALL":
+    if status == "ABSENT" or status == "ALL":
         print(" etret : ",filtered_attendance_data)
         # Create a set of memberIDs to remove
         member_ids_to_remove = {i.memberID for i in filtered_attendance_data}
@@ -684,7 +684,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
         # Filter the members
         remaining_members = [member for member in queryed_Members if id not in member_ids_to_remove]
 
-        if status == "ABSCENT":
+        if status == "ABSENT":
 
             filtered_attendance_data = []
 
@@ -694,7 +694,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
             "id": None,
             "memberID": i.memberID,
             "fullName": f"{i.firstName} {i.middleName} {i.lastName}",
-            "status": "ABSCENT",
+            "status": "ABSENT",
             "department": i.departmentName,
             "markedBy": "NOT_SET",
             "timeStamp": "NOT_MARKED"
