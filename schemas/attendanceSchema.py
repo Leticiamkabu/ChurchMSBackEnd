@@ -14,13 +14,13 @@ class AttendanceSchema(BaseModel):
     markedBy: str
 
 class AttendanceResponseSchema(BaseModel):
-    id : uuid.UUID
+    # id : uuid.UUID
     memberID: str
     fullName: str
     status: str
-    department: Optional[str]
+    # department: Optional[str]
     markedBy: str
-    timeStamp : str
+    timeMarked : str
     
 
     class Config:
@@ -28,5 +28,5 @@ class AttendanceResponseSchema(BaseModel):
 
     
 class AttendanceResponse(AttendanceResponseSchema):
-    id : Optional[uuid.UUID]
+    # id : Optional[uuid.UUID]
     pass  # You can add any extra fields or modifications if needed

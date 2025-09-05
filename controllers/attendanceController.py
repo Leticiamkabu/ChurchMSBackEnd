@@ -96,7 +96,8 @@ async def create_user(db: db_dependency, attendance: AttendanceSchema):
                 date = str(date.today()),
                 status= attendance.status,
                 serviceType = attendance.serviceType,
-                markedBy = attendance.markedBy
+                markedBy = attendance.markedBy,
+                timeMarked = str(datetime.now())
                 
 
             )

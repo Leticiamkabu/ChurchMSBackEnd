@@ -15,12 +15,15 @@ import re
 
     
 def prettify_key(key):
+    if key == "memberID":
+        return key  # Keep it exactly as it is
+    
     # Insert space before each uppercase letter except if it's the first character
     words = re.sub(r'(?<!^)(?=[A-Z])', ' ', key)
     # Capitalize the first letter of each word
     title_case = words.title()
+    
     return title_case
-
 
 
 def generate_excel(data: Any, filename : str):

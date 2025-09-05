@@ -12,10 +12,12 @@ class Notification(Base):
     notificationType = Column(String, nullable=False)
     recipient = Column(String, nullable=False)
     message = Column(String, nullable=False)
+    senderId = Column(String, nullable=False)
     createdOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
     updatedOn = Column(DateTime, nullable=True,
                         default=func.current_timestamp())
+
 
 
 class ScheduledMessages(Base):

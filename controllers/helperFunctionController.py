@@ -96,26 +96,15 @@ async def replace_null_values_in_the_database(table_name: str):
 
 @router.post("/helperFunction/clone_db")
 async def clone_db():
-    # server_user: str, server_pass: str, server_host: str, server_db: str,server__port: str,table_name: str
     try:
         # Dump source DB to temp file
         with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
             dump_file = tmpfile.name
 
-        # Set env for pg_dump
+        # Source DB credentials
         env = os.environ.copy()
         env["PGPASSWORD"] = "leeminho"
-        env["PGSSLMODE"] = "require" 
-
-        # dump_cmd = [
-        #     "pg_dump",
-        #     "-h", "localhost",
-        #     "-p", str(5432),
-        #     "-U", "leticia",
-        #     "-d", "churchMSDev",
-        #     "-Fc",  # custom format for pg_restore
-        #     "-f", dump_file
-        # ]
+        env["PGSSLMODE"] = "require"
 
         dump_cmd = [
             "pg_dump",
@@ -123,48 +112,32 @@ async def clone_db():
             "-p", str(5432),
             "-U", "leticia",
             "-d", "churchMSDev",
-            "-Fc",  # custom format for pg_restore
+            "-Fc",
+            "--no-owner",
             "-f", dump_file
         ]
-
         subprocess.run(dump_cmd, check=True, env=env)
 
-        # Create target database
-        env["PGPASSWORD"] = "TQarR3DpwZPAZieKlm2b9ccDDLfCDM6s"
+        # Target DB credentials
+        env["PGPASSWORD"] = "keRhUl5d20glPBF2fDXEDL93LTtDqJQ9"
         env["PGSSLMODE"] = "require"
-        # createdb_cmd = [
-        #     "createdb",
-        #     "-h", "dpg-d29sksndiees738d04qg-a.oregon-postgres.render.com",
-        #     "-p", str(5432),
-        #     "-U", "ctc_dev_4mjf_user",
-        #     "ctc_dev_4mjf"
-        # ]
-        # subprocess.run(createdb_cmd, check=True, env=env)
-
-        # Restore into target DB
-        # restore_cmd = [
-        #     "pg_restore",
-        #     "-h", "dpg-d29sksndiees738d04qg-a.oregon-postgres.render.com",
-        #     "-p", str(5432),
-        #     "-U", "ctc_dev_4mjf_user",
-        #     "-d", "ctc_dev_4mjf",
-        #     dump_file
-        # ]
 
         restore_cmd = [
             "pg_restore",
-            "-h", "dpg-d29sksndiees738d04qg-a.oregon-postgres.render.com",
+            "-h", "dpg-d2ssou7fte5s739khjng-a.oregon-postgres.render.com",
             "-p", str(5432),
-            "-U", "ctc_dev_4mjf_user",
-            "-d", "ctc_dev_4mjf",
+            "-U", "ctc_dev_axho_user",
+            "-d", "ctc_dev_axho",
+            "--no-owner",
+            "--clean",
+            "--verbose",
             dump_file
         ]
         subprocess.run(restore_cmd, check=True, env=env)
 
-        # Clean up
         os.remove(dump_file)
 
-        return {"status": "success", "message": f"Database cloned to {req.target_db}"}
+        return {"status": "success", "message": "Database cloned to succesfully"}
 
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Command failed: {e}")
@@ -173,13 +146,12 @@ async def clone_db():
 
 
 
-
 @router.post("/helperFunction/move_table_data")
 async def data_transfere(table_name: str):   
     
         
-    SOURCE_DB_URL = "postgresql://leticia:leeminho@localhost/churchMSDev"
-    DESTINATION_DB_URL = "postgresql://ctc_dev_4mjf_user:TQarR3DpwZPAZieKlm2b9ccDDLfCDM6s@dpg-d29sksndiees738d04qg-a.oregon-postgres.render.com/ctc_dev_4mjf"
+    DESTINATION_DB_URL = "postgresql://leticia:leeminho@localhost/churchMSDev"
+    SOURCE_DB_URL = "postgresql://ctc_dev_4mjf_user:TQarR3DpwZPAZieKlm2b9ccDDLfCDM6s@dpg-d29sksndiees738d04qg-a.oregon-postgres.render.com/ctc_dev_4mjf"
 
     # Replace 'your_table_name' with the actual table name you want to transfer
     TABLE_NAME = table_name
