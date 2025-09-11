@@ -635,11 +635,13 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
 
     print("ddddddddd: ",attendance_data)
     for attendance_member in attendance_data:
-        print("stdfg : ", uuid.UUID(str(attendance_member.memberID)))
-        member_data = await db.get(Member, uuid.UUID(str(attendance_member.memberID)))
-        # member_data = attendance.scalar_one_or_none()
+        print("stdfg : ", str(attendance_member.memberID))
+        print("std : ", str(attendance_member.memberID))
+        members = await db.execute(
+        select(Member).where((Member.memberID == attendance_member.memberID)))
+        member_data = members.scalar_one_or_none()
 
-        print("id id :" , member_data.memberID)
+        # print("id id :" , member_data.firstName)
         attendance_member.memberID = member_data.memberID
         attendance_member.department = member_data.departmentName
         attendance_member.timeStamp = attendance_member.createdOn
@@ -697,8 +699,8 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
             "fullName": f"{i.firstName} {i.middleName} {i.lastName}",
             "status": "ABSENT",
             "department": i.departmentName,
-            "markedBy": "NOT_SET",
-            "timeMarked": "NOT_MARKED"
+            "markedBy": "Not_set",
+            "timeMarked": "Not_marked"
         }
         
 
@@ -791,19 +793,19 @@ async def process_csv(file: UploadFile):
         if os.path.exists(temp_input_file):
             os.remove(temp_input_file)
 
-[
-  {
-    "date": "2025-05-16",
-    "id": "80a0f737-0cd0-41f3-bf61-2f4d863488ea",
-    "fullName": "John Kofi Avorgah",
-    "memberID": "4e77c9cd-c54b-40ef-8186-64f5f7205581",
-    "serviceType": "",
-    "createdOn": "2025-05-16 13:04:13.17942+00",
-    "status": "ABSENT",
-    "markedBy": "LeticiaKabu",
-    "updatedOn": "2025-05-16 13:04:13.17942+00"
-  }
-]
+# [
+#   {
+#     "date": "2025-05-16",
+#     "id": "80a0f737-0cd0-41f3-bf61-2f4d863488ea",
+#     "fullName": "John Kofi Avorgah",
+#     "memberID": "4e77c9cd-c54b-40ef-8186-64f5f7205581",
+#     "serviceType": "",
+#     "createdOn": "2025-05-16 13:04:13.17942+00",
+#     "status": "ABSENT",
+#     "markedBy": "LeticiaKabu",
+#     "updatedOn": "2025-05-16 13:04:13.17942+00"
+#   }
+# ]
 
 
 # QUERY TO REMOVE NULL FROM TABLE USING ID
