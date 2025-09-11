@@ -488,7 +488,7 @@ async def sort_member_data(db: db_dependency, age: str, ageRange: str, departmen
     filters = []
 
     # Add filters based on optional inputs
-    if age != "a":  # If a date is provided
+    if age != "all":  # If a date is provided
         filters.append(Member.age == age)
     if department != "d":  # If a date is provided
         filters.append(Member.departmentName == department)
@@ -574,11 +574,15 @@ async def get_member_image(db: db_dependency, fullname : str):
 
 def generatedId(lastNumber):
     prefix = "CTCAG"
-    padded_number = str(lastNumber).zfill(4)  # pads to 4 digits like 0001
+    padded_number = "00"+ str(lastNumber + 1)  # pads to 4 digits like 0001
     year_suffix = str(datetime.now().year)[-2:]  # gets last 2 digits of current year
-    return f"{prefix}_{padded_number}_{year_suffix}"
+    return f"{prefix}/{padded_number}/{year_suffix}"
     
-
+# def generatedId(lastNumber: int) -> str:
+#     prefix = "CTCAG"
+#     year_suffix = str(datetime.now().year)[-2:]  # last 2 digits of year
+#     padded_number = f"00{lastNumber}"  # always prepend "00"
+#     return f"{prefix}/{padded_number}/{year_suffix}"
 
 
 

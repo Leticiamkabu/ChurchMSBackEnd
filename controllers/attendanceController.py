@@ -478,14 +478,14 @@ async def download_current_attendance_data(db: db_dependency):
     print("attendant_list : ",attendance_List)
 
     result = await db.execute(
-        select(Member).where((Member.id.notin_(attendance_List)))
+        select(Member).where((Member.memberID.notin_(attendance_List)))
     )
     absent_members = result.scalars().all()
     print("total absent members : ",len(absent_members))
 
     for data in absent_members:
         y = {}
-        y["memberID"] = str(data.id)
+        y["memberID"] = str(data.memberID)
         y["status"] = "ABSENT"
         y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
         y["serviceType"] = ""
@@ -698,7 +698,7 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
             "status": "ABSENT",
             "department": i.departmentName,
             "markedBy": "NOT_SET",
-            "timeStamp": "NOT_MARKED"
+            "timeMarked": "NOT_MARKED"
         }
         
 

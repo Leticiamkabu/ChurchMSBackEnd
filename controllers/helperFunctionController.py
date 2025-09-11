@@ -43,9 +43,9 @@ db_name = os.getenv('DB_NAME')
 @router.post("/helperFunction/clean_data_base/{table_name}")
 async def replace_null_values_in_the_database(table_name: str):
 
-    # DATABASE_URL = f"postgresql://ctc_dev_06r2_user:c7jxzBBZTHTNeequSLRVLflYYhZo1Nq6@dpg-d1l00m15pdvs73bbq1og-a.oregon-postgres.render.com/ctc_dev_06r2"
+    DATABASE_URL = "postgresql://ctc_dev_axho_user:keRhUl5d20glPBF2fDXEDL93LTtDqJQ9@dpg-d2ssou7fte5s739khjng-a.oregon-postgres.render.com/ctc_dev_axho"
 
-    DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
+    # DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
     engine = create_engine(DATABASE_URL)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
