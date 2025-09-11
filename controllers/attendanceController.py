@@ -486,8 +486,8 @@ async def download_current_attendance_data(db: db_dependency):
     for data in absent_members:
         y = {}
         y["memberID"] = str(data.memberID)
-        y["status"] = "ABSENT"
         y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
+        y["status"] = "ABSENT"
         y["serviceType"] = ""
         y["date"] = str(date.today())
         y["markedBy"] = "Not Marked"
