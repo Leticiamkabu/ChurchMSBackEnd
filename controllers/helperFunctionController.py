@@ -119,15 +119,15 @@ async def clone_db():
         subprocess.run(dump_cmd, check=True, env=env)
 
         # Target DB credentials
-        env["PGPASSWORD"] = "keRhUl5d20glPBF2fDXEDL93LTtDqJQ9"
+        env["PGPASSWORD"] = "uIuAVJQQF1TirGjb6uxb1UyaAWIryzPA"
         env["PGSSLMODE"] = "require"
 
         restore_cmd = [
             "pg_restore",
-            "-h", "dpg-d2ssou7fte5s739khjng-a.oregon-postgres.render.com",
+            "-h", "dpg-d3ioso6mcj7s739e79j0-a.oregon-postgres.render.com",
             "-p", str(5432),
-            "-U", "ctc_dev_axho_user",
-            "-d", "ctc_dev_axho",
+            "-U", "ctc_dev_17ay_user",
+            "-d", "ctc_dev_17ay",
             "--no-owner",
             "--clean",
             "--verbose",
@@ -137,7 +137,7 @@ async def clone_db():
 
         os.remove(dump_file)
 
-        return {"status": "success", "message": "Database cloned to succesfully"}
+        return {"status": "success", "message": "Database cloned succesfully"}
 
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"Command failed: {e}")
