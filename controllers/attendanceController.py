@@ -357,7 +357,8 @@ async def update_attendance(db: db_dependency, attendance_id: str, attendance_in
     logger.info("Endpoint: update_attendce called for attendance_id: %s", attendance_id)
     
     # Query for the user data
-    attendance_data = await db.get(Attendance, uuid.UUID(attendance_id))
+    #attendance_data = await db.get(Attendance, uuid.UUID(attendance_id))
+    attendance_data = await db.execute(select(Attendance).where(Attendance.id == uuid.UUID(attendance_id),Attendance.date == str(date.today())))
     # user_data = users.scalar()
     # old_username = user_data.username
     # print("old username : ", old_username)
