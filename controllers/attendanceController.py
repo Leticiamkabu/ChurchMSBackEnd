@@ -213,7 +213,7 @@ async def get_attendance_for_the_current_day( db: db_dependency):
     # print("attendance lenght : ",len(attendance_Id_List))
 
     result = await db.execute(
-        select(func.count()).select_from(Member).where(Member.id.notin_(attendance_Id_List))
+        select(func.count()).select_from(Member).where(Member.memberID.notin_(attendance_Id_List))
     )
     absent_members = result.scalar()
     # print("total absent members : ",absent_members) 
