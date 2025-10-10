@@ -17,10 +17,11 @@ class MemberSchema(BaseModel):
     nationality :str
     homeTown :str
     homeAddress : str
+    town : str
     workingStatus : str
     occupation : str
-    qualification : str
-    institutionName : str
+    educationalLevel : str
+    highestEducation : str
     mothersName :str
     fathersName :str
     nextOfKin :str
@@ -68,10 +69,11 @@ class MemberResponse(BaseModel):
     nationality :str
     homeTown :str
     homeAddress : str
+    town : str
     workingStatus : str
     occupation : str
-    qualification : str
-    institutionName : str
+    educationalLevel : str
+    highestEducation : str
     mothersName :str
     fathersName :str
     nextOfKin :str
