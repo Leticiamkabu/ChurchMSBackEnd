@@ -330,7 +330,7 @@ async def get_absent_attendance_data( db: db_dependency):
         y["memberID"] = data.id
         y["status"] = "ABSENT"
         y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
-        y["serviceType"] = ""
+        y["serviceType"] = "Not Indicated"
         y["date"] = str(date.today())
         y["markedBy"] = "Not Marked"
         modified_data.append(y)
