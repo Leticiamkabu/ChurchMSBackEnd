@@ -489,9 +489,8 @@ async def download_current_attendance_data(db: db_dependency):
         y["memberID"] = str(data.memberID)
         y["fullName"] = data.firstName +" "+ data.middleName + " " +data.lastName
         y["status"] = "ABSENT"
-        y["serviceType"] = ""
-        y["date"] = str(date.today())
         y["markedBy"] = "Not Marked"
+        y["date"] = "Not Indicated"
         attendance_dicts.append(y)
 
     print("total atendance members : ",len(attendance_dicts))
