@@ -318,7 +318,7 @@ async def get_absent_attendance_data( db: db_dependency):
     print("attendant_list : ",attendance_List)
 
     result = await db.execute(
-        select(Member).where((Member.id.notin_(attendance_List)))
+        select(Member).where((Member.memberID.notin_(attendance_List)))
     )
     absent_members = result.scalars().all()
     print("total absent members : ",len(absent_members))
