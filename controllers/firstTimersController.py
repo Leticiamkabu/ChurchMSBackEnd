@@ -357,14 +357,14 @@ async def download_first_timers_data(db: db_dependency, format : str):
 
     if format == "Excel":
         # Generate Excel file
-        file_path = generate_excel(first_timer_dicts, "member_data")
+        file_path = generate_excel(first_timer_dicts, "first_timers_data")
         media_Type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        file_Name = "member_data.xlsx"
+        file_Name = "first_timers_data.xlsx"
 
     elif format == "Docx":
-        file_path = generate_excel(first_timer_dicts, "member_data")
+        file_path = generate_excel(first_timer_dicts, "first_timers_data")
         media_Type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        file_Name = "member_data.docs"
+        file_Name = "first_timers_data.docs"
 
 
     # Return the file using FastAPI's FileResponse
