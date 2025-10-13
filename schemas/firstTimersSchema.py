@@ -13,9 +13,7 @@ class FirstTimersSchema(BaseModel):
     contactHours: str
     specialPrayerOrCounseling: str
     counselor: str
-    ftClass: str
     date: str
-    status: str
     
     
 

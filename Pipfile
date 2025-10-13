@@ -28,6 +28,7 @@ pandas = "*"
 python-magic = "*"
 python-docx = "*"
 uvicorn = "*"
+greenlet = "*"
 
 [dev-packages]
 
