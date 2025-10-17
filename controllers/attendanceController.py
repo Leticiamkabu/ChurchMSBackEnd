@@ -359,7 +359,7 @@ async def update_attendance(db: db_dependency, attendance_id: str, attendance_in
     # Query for the user data
     #attendance_data = await db.get(Attendance, uuid.UUID(attendance_id))
     result = await db.execute(select(Attendance).where(Attendance.id == uuid.UUID(attendance_id),Attendance.date == str(date.today())))
-    attendance_data = result.scalars().all()
+    attendance_data = result.scalar()
     # old_username = user_data.username
     # print("old username : ", old_username)
     

@@ -109,6 +109,7 @@ async def create_first_timers(db: db_dependency, request: FirstTimersSchema):
                 contactHours = request.contactHours,
                 specialPrayerOrCounseling = request.specialPrayerOrCounseling,
                 counselor = request.counselor,
+                birthMonth = request.birthMonth,
                 date = request.date,
                 status = "VISITOR",
                 ftClass = "NEW MEMBERS",

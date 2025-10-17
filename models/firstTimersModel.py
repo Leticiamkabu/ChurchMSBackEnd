@@ -18,6 +18,7 @@ class FirstTimers(Base):
     contactHours = Column(String, nullable=False)
     specialPrayerOrCounseling = Column(String, nullable=False)
     counselor = Column(String, nullable=False)
+    birthMonth = Column(String, nullable=False)
     date = Column(String, nullable=False)
     status = Column(String, nullable=False)
     ftClass = Column(String, nullable=False)

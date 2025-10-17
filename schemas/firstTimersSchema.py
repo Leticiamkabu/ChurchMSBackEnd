@@ -12,6 +12,7 @@ class FirstTimersSchema(BaseModel):
     purposeOfComing: str
     contactHours: str
     specialPrayerOrCounseling: str
+    birthMonth: str
     counselor: str
     date: str
     
