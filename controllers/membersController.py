@@ -311,19 +311,46 @@ async def get_member_by_id( member_id: uuid.UUID ,db: db_dependency):
 
 
 # get member by words
-@router.get("/members/get_member_by_words/{words}")
-async def get_member_by_words( words: str ,db: db_dependency):
+@router.get("/members/get_member_by_words/{name}/{department}")
+async def get_member_by_words( name: str , department: str ,db: db_dependency):
 
-    name = words.split()
+    search_conditions = []
 
-    search_conditions = [
-    or_(
-        Member.firstName.ilike(f"%{word}%"),
-        Member.middleName.ilike(f"%{word}%"),
-        Member.lastName.ilike(f"%{word}%")
-    )
-    for word in name
-]
+    if name == 'None' and department != 'None':
+    # Search only by department
+        search_conditions = [
+            Member.departmentName.ilike(f"%{department}%")
+        ]
+
+    elif name != 'None' and department == 'None':
+    # Search only by name (split into words)
+        names = name.split()
+        search_conditions = [
+            or_(
+                Member.firstName.ilike(f"%{n}%"),
+                Member.middleName.ilike(f"%{n}%"),
+                Member.lastName.ilike(f"%{n}%")
+            )
+        for n in names
+        ]
+
+    elif name != 'None' and department != 'None':
+        # Search by both name and department
+        names = name.split()
+        name_conditions = [
+            or_(
+                Member.firstName.ilike(f"%{n}%"),
+                Member.middleName.ilike(f"%{n}%"),
+                Member.lastName.ilike(f"%{n}%")
+            )
+            for n in names
+        ]
+        search_conditions = [
+            and_(
+                or_(*name_conditions),
+                Member.departmentName.ilike(f"%{department}%")
+            )
+        ]
 
     query = select(Member).filter(*search_conditions)
 # results = query.all()

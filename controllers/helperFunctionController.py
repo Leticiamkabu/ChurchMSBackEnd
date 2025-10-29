@@ -103,15 +103,15 @@ async def clone_db():
 
         # Source DB credentials
         env = os.environ.copy()
-        env["PGPASSWORD"] = "leeminho"
+        env["PGPASSWORD"] =  "uIuAVJQQF1TirGjb6uxb1UyaAWIryzPA"
         env["PGSSLMODE"] = "require"
 
         dump_cmd = [
             "pg_dump",
-            "-h", "localhost",
+            "-h",  "dpg-d3ioso6mcj7s739e79j0-a.oregon-postgres.render.com",
             "-p", str(5432),
-            "-U", "leticia",
-            "-d", "churchMSDev",
+            "-U",  "ctc_dev_17ay_user",
+            "-d",  "ctc_dev_17ay",
             "-Fc",
             "--no-owner",
             "-f", dump_file
@@ -119,16 +119,17 @@ async def clone_db():
         subprocess.run(dump_cmd, check=True, env=env)
 
         # Target DB credentials
-        env["PGPASSWORD"] = "uIuAVJQQF1TirGjb6uxb1UyaAWIryzPA"
-        env["PGSSLMODE"] = "require"
+        env["PGPASSWORD"] =  "leeminho"
+        env["PGSSLMODE"] = "disable"
 
         restore_cmd = [
             "pg_restore",
-            "-h", "dpg-d3ioso6mcj7s739e79j0-a.oregon-postgres.render.com",
+            "-h", "localhost",
             "-p", str(5432),
-            "-U", "ctc_dev_17ay_user",
-            "-d", "ctc_dev_17ay",
+            "-U", "postgres",
+            "-d", "churchMSDev",
             "--no-owner",
+            "--no-acl", 
             "--clean",
             "--verbose",
             dump_file
