@@ -338,6 +338,14 @@ async def get_member_by_words( name: str , department: str ,db: db_dependency):
         # Search by both name and department
         names = name.split()
         name_conditions = [
+        or_(
+            Member.firstName.ilike(f'%{n}%'),
+            Member.middleName.ilike(f'%{n}%'),
+            Member.lastName.ilike(f'%{n}%')
+        )
+        for n in names
+    ]
+        name_conditions = [
             or_(
                 Member.firstName.ilike(f"%{n}%"),
                 Member.middleName.ilike(f"%{n}%"),
@@ -347,8 +355,8 @@ async def get_member_by_words( name: str , department: str ,db: db_dependency):
         ]
         search_conditions = [
             and_(
-                or_(*name_conditions),
-                Member.departmentName.ilike(f"%{department}%")
+                and_(*name_conditions),
+                Member.departmentName == department
             )
         ]
 
