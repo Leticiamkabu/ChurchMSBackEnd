@@ -29,6 +29,7 @@ python-magic = "*"
 python-docx = "*"
 uvicorn = "*"
 greenlet = "*"
+aiofiles = "*"
 
 [dev-packages]
 

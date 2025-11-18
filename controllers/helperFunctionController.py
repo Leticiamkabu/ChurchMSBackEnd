@@ -10,6 +10,8 @@ import logging
 import os
 import subprocess
 import tempfile
+from fastapi import UploadFile,status, File, Form, Request
+
 
 
 # create a connection to the database
@@ -103,15 +105,15 @@ async def clone_db():
 
         # Source DB credentials
         env = os.environ.copy()
-        env["PGPASSWORD"] =  "uIuAVJQQF1TirGjb6uxb1UyaAWIryzPA"
-        env["PGSSLMODE"] = "require"
+        env["PGPASSWORD"] =  "leeminho"
+        env["PGSSLMODE"] = "disable"
 
         dump_cmd = [
             "pg_dump",
-            "-h",  "dpg-d3ioso6mcj7s739e79j0-a.oregon-postgres.render.com",
+            "-h",  "localhost",
             "-p", str(5432),
-            "-U",  "ctc_dev_17ay_user",
-            "-d",  "ctc_dev_17ay",
+            "-U",  "postgres",
+            "-d",  "churchMSDev",
             "-Fc",
             "--no-owner",
             "-f", dump_file
@@ -119,15 +121,15 @@ async def clone_db():
         subprocess.run(dump_cmd, check=True, env=env)
 
         # Target DB credentials
-        env["PGPASSWORD"] =  "leeminho"
-        env["PGSSLMODE"] = "disable"
+        env["PGPASSWORD"] =  "yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0"
+        env["PGSSLMODE"] = "require"
 
         restore_cmd = [
             "pg_restore",
-            "-h", "localhost",
+            "-h", "dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com",
             "-p", str(5432),
-            "-U", "postgres",
-            "-d", "churchMSDev",
+            "-U", "ctc_dev_as4o_user",
+            "-d", "ctc_dev_as4o",
             "--no-owner",
             "--no-acl", 
             "--clean",
@@ -204,4 +206,144 @@ async def data_transfere(table_name: str):
     print("Data transfer complete.")
     return "Data transfer complete."
 
+import aiofiles
+from docx import Document
+import io
 
+
+def read_docx(doc):
+    """Extracts name and department from a Word Document table."""
+    data_list = []  # list of dicts for multiple rows
+
+    # Check if the document has tables
+    if not doc.tables:
+        return {"error": "No tables found in document"}
+
+    table = doc.tables[0]  # assuming first table contains your data
+
+    # Get headers from first row
+    headers = [cell.text.strip().upper() for cell in table.rows[0].cells]
+
+    # Check required columns
+    if "NAME" not in headers or "DEPARTMENT" not in headers:
+        return {"error": "Table must contain 'NAME' and 'DEPARTMENT' columns"}
+
+    name_idx = headers.index("NAME")
+    dept_idx = headers.index("DEPARTMENT")
+
+    # Read remaining rows
+    for row in table.rows[1:]:
+        name = row.cells[name_idx].text.strip()
+        department = row.cells[dept_idx].text.strip()
+        data_list.append({"NAME": name, "DEPARTMENT": department})
+
+    return data_list
+
+
+import psycopg2
+from psycopg2 import OperationalError
+# postgresql://ctc_dev_as4o_user:yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0@dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com/ctc_dev_as4o
+def get_connection():
+    """Safely connect to the Render PostgreSQL database with SSL enabled."""
+    SOURCE_DB_URL = (
+        "postgresql://ctc_dev_as4o_user:"
+        "yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0@"
+        "dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com/"
+        "ctc_dev_as4o?sslmode=require"
+    )
+    try:
+        conn = psycopg2.connect(SOURCE_DB_URL)
+        return conn
+    except OperationalError as e:
+        print("⚠️ Database connection failed:", e)
+        return None
+
+
+def update_department_in_db(name, department):
+    """Updates department for a given employee name in the database."""
+    conn = get_connection()
+    if not conn:
+        return {"status": "error", "message": "Failed to connect to database"}
+
+    cursor = conn.cursor()
+
+    try:
+        # Normalize name (lowercase + remove spaces)
+        clean_name = name.replace(" ", "").lower().strip()
+
+        # Find matching members
+        cursor.execute("""
+            SELECT id, "firstName", "middleName", "lastName"
+            FROM members
+            WHERE LOWER(TRIM("lastName" || COALESCE("middleName", '') || "firstName")) = %s
+        """, (clean_name,))
+
+        records = cursor.fetchall()
+
+        if len(records) == 0:
+            msg = f"No record found for {name}"
+            return {"status": "none", "message": msg}
+
+        elif len(records) > 1:
+            msg = f"Multiple records found for {name}, skipping update."
+            return {"status": "multiple", "message": msg}
+
+        # Exactly one match → update department
+        member_id = records[0][0]
+        cursor.execute(
+            'UPDATE members SET "departmentName" = %s WHERE id = %s',
+            (department, member_id),
+        )
+        conn.commit()
+
+        msg = f"Department updated for {name}"
+        return {"status": "updated", "message": msg}
+
+    except OperationalError as e:
+        msg = f"Database operation failed for {name}: {e}"
+        print("⚠️", msg)
+        return {"status": "error", "message": msg}
+
+    finally:
+        cursor.close()
+        conn.close()
+
+import time
+
+@router.post("/helperFunction/updateDepartment")
+async def department_data_update(file: UploadFile = File(...)):
+    if not file.filename.endswith(".docx"):
+        return {"error": "Invalid file type. Please upload a .docx file"}
+
+    contents = await file.read()
+    doc = Document(io.BytesIO(contents))
+    data = read_docx(doc)
+    print("Extracted data:", data)
+
+    if "NAME" not in data[0] or "DEPARTMENT" not in data[0]:
+        return {"error": "Document must contain 'Name:' and 'Department:' fields"}
+
+    # result = update_department_in_db(data["NAME"], data["DEPARTMENT"])
+
+    for row in data:
+        print("rowss : ", row )
+        name = row.get("NAME")
+        department = row.get("DEPARTMENT")
+
+        if not name or not department:
+            results.append({"name": name, "status": "error", "message": "Missing name or department"})
+            continue
+
+        update_result = update_department_in_db(name, department)
+        time.sleep(20) 
+
+    # Return the appropriate message based on status
+        if update_result["status"] == "updated":
+            print("message:", update_result["message"], "department:", row.get("DEPARTMENT"))
+        else:
+            print("error:", update_result["message"], "department:", row.get("DEPARTMENT"))
+
+
+
+
+# postgresql://ctc_dev_as4o_user:yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0@dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com/ctc_dev_as4o
