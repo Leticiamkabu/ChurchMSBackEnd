@@ -121,15 +121,15 @@ async def clone_db():
         subprocess.run(dump_cmd, check=True, env=env)
 
         # Target DB credentials
-        env["PGPASSWORD"] =  "yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0"
+        env["PGPASSWORD"] =  "sOg4Ja1CNTTdlVr8j15HplPQJQyM94kz"
         env["PGSSLMODE"] = "require"
 
         restore_cmd = [
             "pg_restore",
-            "-h", "dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com",
+            "-h", "dpg-d4s17dh5pdvs73btcoi0-a.oregon-postgres.render.com",
             "-p", str(5432),
-            "-U", "ctc_dev_as4o_user",
-            "-d", "ctc_dev_as4o",
+            "-U", "ctc_dev_n0qw_user",
+            "-d", "ctc_dev_n0qw",
             "--no-owner",
             "--no-acl", 
             "--clean",
