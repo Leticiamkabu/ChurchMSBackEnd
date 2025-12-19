@@ -315,11 +315,11 @@ async def get_member_by_id( member_id: uuid.UUID ,db: db_dependency):
 async def get_member_by_words( name: str , department: str ,db: db_dependency):
 
     search_conditions = []
-
+    
     if name == 'None' and department != 'None':
     # Search only by department
         search_conditions = [
-            Member.departmentName.ilike(f"%{department}%")
+            Member.departmentName == department
         ]
 
     elif name != 'None' and department == 'None':
@@ -381,6 +381,9 @@ async def get_member_by_words( name: str , department: str ,db: db_dependency):
     
     if members_data  == []:
         raise HTTPException(status_code=200, detail="Members with the given names do not exist" )
+
+    for member in members_data:
+        print(member.departmentName)
     
     return members_data
 

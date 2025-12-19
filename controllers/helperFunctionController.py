@@ -242,14 +242,14 @@ def read_docx(doc):
 
 import psycopg2
 from psycopg2 import OperationalError
-# postgresql://ctc_dev_as4o_user:yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0@dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com/ctc_dev_as4o
+# postgresql://ctc_dev_n0qw_user:sOg4Ja1CNTTdlVr8j15HplPQJQyM94kz@dpg-d4s17dh5pdvs73btcoi0-a.oregon-postgres.render.com/ctc_dev_n0qw
 def get_connection():
     """Safely connect to the Render PostgreSQL database with SSL enabled."""
     SOURCE_DB_URL = (
-        "postgresql://ctc_dev_as4o_user:"
-        "yIIfvLFHsyAMI8vIIWgs2xLbrxiTzAk0@"
-        "dpg-d46qubc9c44c738m52v0-a.oregon-postgres.render.com/"
-        "ctc_dev_as4o?sslmode=require"
+        "postgresql://ctc_dev_n0qw_user:"
+        "sOg4Ja1CNTTdlVr8j15HplPQJQyM94kz@"
+        "dpg-d4s17dh5pdvs73btcoi0-a.oregon-postgres.render.com/"
+        "ctc_dev_n0qw?sslmode=require"
     )
     try:
         conn = psycopg2.connect(SOURCE_DB_URL)
