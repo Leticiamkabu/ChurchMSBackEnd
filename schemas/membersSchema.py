@@ -85,6 +85,7 @@ class MemberResponse(BaseModel):
     memberType :str
     cell :str
     departmentName :str
+    monthBorn :str
     dateJoined :str
     classSelection :str
     spiritualGift :str

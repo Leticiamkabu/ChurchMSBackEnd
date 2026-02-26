@@ -37,6 +37,7 @@ class Member(Base):
     memberType = Column(String, nullable=False)
     cell = Column(String, nullable=False)
     departmentName = Column(String, nullable=False)
+    monthBorn = Column(String, nullable=False)
     dateJoined = Column(String, nullable=False)
     classSelection = Column(String, nullable=False)
     spiritualGift = Column(String, nullable=False)

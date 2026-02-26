@@ -115,6 +115,7 @@ async def send_bulk_sms_notification(db: db_dependency, request: BulkSMSRequestS
 
     try:
         
+        
         recipients_str = ",".join(request.recipient)
         print(recipients_str)
         print("message" ,request.message)

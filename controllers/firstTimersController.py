@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException 
 from typing import Annotated
 from sqlalchemy.orm import Session
-from sqlalchemy import select, or_, func, and_
+from sqlalchemy import select, or_, func, and_, cast, Date
 import requests
 from passlib.context import CryptContext
 import bcrypt
@@ -477,3 +477,46 @@ def generatedId(lastNumber):
     id_constant = 'CTC_M_00'
     id_number = lastNumber + 1
     return id_constant + str(id_number)
+
+
+# members/sort_first_timer_data/${this.firstTimerFilters.startMonth}/${this.firstTimerFilters.endMonth}`,{
+@router.get("/first_timers/sort_first_timer_data/{startMonth}/{endMonth}")
+async def sort_first_timer_data( startMonth: str ,endMonth: str ,db: db_dependency):
+
+    month_order = {
+        "january": 1,
+        "february": 2,
+        "march": 3,
+        "april": 4,
+        "may": 5,
+        "june": 6,
+        "july": 7,
+        "august": 8,
+        "september": 9,
+        "october": 10,
+        "november": 11,
+        "december": 12
+    }
+
+    start = month_order[startMonth.lower()]
+    end = month_order[endMonth.lower()]
+
+    if start <= end:
+        month_numbers = list(range(start, end + 1))
+    else:
+        month_numbers = list(range(start, 13)) + list(range(1, end + 1))
+
+    print("Month numbers being searched:", month_numbers)
+
+    condition = extract(
+    "month", cast(FirstTimers.date, Date)).in_(month_numbers)
+
+    query = select(FirstTimers).filter(condition)
+
+    result = await db.execute(query)
+    first_timers_data = result.scalars().all()
+
+    if not first_timers_data:
+        raise HTTPException(status_code=200, detail="No first timers found")
+
+    return first_timers_data

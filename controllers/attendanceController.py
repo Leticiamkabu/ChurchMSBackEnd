@@ -575,8 +575,8 @@ async def download_attendance_report(db: db_dependency, specifiedDate: str, stat
 
 
 # download attendance for a particular day
-@router.get("/attendance/report_fetch/{specifiedDate}/{status}/{department}")
-async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status: str, department : str):
+@router.get("/attendance/report_fetch/{specifiedDate}/{status}/{department}/{birthMonth}")
+async def fetch_attendance_report(db: db_dependency, specifiedDate: str, birthMonth: str, status: str, department : str):
 
     attendance = await db.execute(select(Attendance))
     attendance_data = attendance.scalars().all()
@@ -706,6 +706,31 @@ async def fetch_attendance_report(db: db_dependency, specifiedDate: str, status:
 
             filtered_attendance_data.append(d)
         print("checking something: ",len(filtered_attendance_data))
+
+    if birthMonth != "Not Added" and attendance_data != []:
+        processed_data = []
+        for attendance in filtered_attendance_data:
+            print("qaws :", attendance.department)
+            if attendance.birthMonth == birthMonth:
+                processed_data.append(attendance)
+        
+        filtered_attendance_data = []
+        for i in processed_data:
+
+            filtered_attendance_data.append(i)
+
+        if filtered_attendance_data == []:
+            print(" yes birth month")
+            raise HTTPException(status_code=200, detail="No attendance data exists with birth month specified")
+
+    elif birthMonth != "Not Added":
+        queryed_Members = []
+        result = await db.execute(select(Member).where(Member.monthBorn == birthMonth))
+        all_members = result.scalars().all()
+        for i in all_members:
+
+            queryed_Members.append(i)
+
     ordered_attendance_data = [AttendanceResponse.from_orm(attendances) for attendances in filtered_attendance_data]  
 
     attendance_dicts = []

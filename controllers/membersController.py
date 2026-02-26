@@ -539,7 +539,7 @@ async def sort_member_data(db: db_dependency, age: str, ageRange: str, departmen
         print("brith month : ", birthMonth)
         # "07"  # If a specific status is provided
         # YYYY-MM-DD format
-        filters.append(func.substr(Member.dateOfBirth, 4, 2) == birthMonth)
+        filters.append(Member.monthBorn == birthMonth)
 
     member = await db.execute(select(Member).where(and_(*filters))) 
     member_data = member.scalars().all()
@@ -894,3 +894,63 @@ async def download_member_data(report : Request):
     # Return the file using FastAPI's FileResponse
     return FileResponse(file_path, media_type = media_Type, filename = file_Name)
 
+
+
+@router.get("/members/get_member_phone_number/{name}")  
+async def get_member_phone_number(db: db_dependency, name : str):
+
+    logger.info("Endpoint : get_member_phone_number")
+
+    if name != 'None':
+        search_conditions = [
+            or_(
+                Member.firstName.ilike(f"%{name}%"),
+                Member.middleName.ilike(f"%{name}%"),
+                Member.lastName.ilike(f"%{name}%")
+            )
+        
+        ]
+
+        query = select(Member).filter(*search_conditions)
+        result = await db.execute(query)
+        members_data = result.scalars().all()
+
+        if members_data  == []:
+            raise HTTPException(status_code=200, detail="Members with the given names do not exist" )
+
+    else:
+        raise HTTPException(status_code=200, detail="Please enter the name " )
+
+    for member in members_data:
+        print(member.phoneNumber)
+    
+    return members_data
+
+
+# sort member data
+@router.get("/members/sort_member_data/{age}/{ageRange}/{department}/{birthMonth}")
+async def sort_member_data(db: db_dependency, age: str, ageRange: str, department:str, birthMonth:str):
+
+    # Collect optional filters
+    filters = []
+
+    # Add filters based on optional inputs
+    if age != "all":  # If a date is provided
+        filters.append(Member.age == age)
+    if department != "d":  # If a date is provided
+        filters.append(Member.departmentName == department)
+    if ageRange != "ar":
+        # "1,2"  # If a specific status is provided
+        ranges = list(map(int, ageRange.split(",")))
+        filters.append(and_(Member.age >= str(ranges[0]), Member.age <= str(ranges[1])))
+    if birthMonth != "bm":
+        print("brith month : ", birthMonth)
+        # "07"  # If a specific status is provided
+        # YYYY-MM-DD format
+        filters.append(func.substr(Member.dateOfBirth, 4, 2) == birthMonth)
+
+    member = await db.execute(select(Member).where(and_(*filters))) 
+    member_data = member.scalars().all()
+    ordered_member_data = [MemberResponse.from_orm(member) for member in member_data]  
+
+    return ordered_member_data
