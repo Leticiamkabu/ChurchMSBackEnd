@@ -146,8 +146,10 @@ async def get_attendance_by_id( attendance_id: uuid.UUID ,db: db_dependency):
     return attendance_data
 
 # get attendance by member id
-@router.get("/attendance/get_attendance_by_member_id/{member_id}")
+@router.get("/attendance/get_attendance_by_member_id/{member_id:path}")
 async def get_attendance_by_member_id(member_id: str, db: db_dependency):
+
+    # print("mwenfghf > ",member_id)
     result = await db.execute(
         select(Attendance).where(Attendance.memberID == member_id, Attendance.date == str(date.today()))
     )
